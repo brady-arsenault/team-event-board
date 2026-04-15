@@ -1,7 +1,14 @@
-import { CancelEventError, CreateEventError, CreateEventInput, GetEventByIdError, GetUserRsvpsError, IActingUser, IEvent, IEventService, IRsvp, IRsvpService, IUserRsvpDashboard, ListEventsError, ListEventsFilter, PublishEventError, SearchEventsError, SearchEventsInput, ToggleRsvpError, UpdateEventError, UpdateEventInput, InvalidInputError } from "./contracts";
-import { Err, Result } from "./lib/result";
+import { randomUUID } from "node:crypto";
+import { CancelEventError, CreateEventError, CreateEventInput, GetEventByIdError, GetUserRsvpsError, IActingUser, IEvent, IEventRepository, IEventService, IRsvp, IRsvpService, IUserRsvpDashboard, ListEventsError, ListEventsFilter, PublishEventError, SearchEventsError, SearchEventsInput, ToggleRsvpError, UpdateEventError, UpdateEventInput, InvalidInputError } from "./contracts";
+import { Err, Ok, Result } from "./lib/result";
 
 class EventService implements IEventService, IRsvpService {
+    private readonly eventRepository: IEventRepository;
+
+    constructor(eventRepository: IEventRepository) {
+        this.eventRepository = eventRepository;
+    }
+
     async toggleRsvp(eventId: string, actingUser: IActingUser): Promise<Result<IRsvp, ToggleRsvpError>> {
         throw new Error("Method not implemented.");
     }
@@ -27,7 +34,23 @@ class EventService implements IEventService, IRsvpService {
             return Err(InvalidInputError("startAt must be before endAt."));
         }
 
-        throw new Error("Method not implemented.");
+        const event: IEvent = {
+            id: randomUUID(),
+            title: input.title,
+            description: input.description,
+            location: input.location,
+            category: input.category,
+            capacity: input.capacity,
+            status: "draft",
+            startAt: input.startAt,
+            endAt: input.endAt,
+            organizerId: actingUser.userId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        const createdEvent = await this.eventRepository.create(event);
+        return Ok(createdEvent);
     }
 
 
