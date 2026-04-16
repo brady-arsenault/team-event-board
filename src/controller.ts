@@ -25,6 +25,11 @@ export interface IEventController {
     input: UpdateEventInput,
     store: AppSessionStore,
   ): Promise<void>;
+  eventDetailFromForm(
+    res: Response,
+    eventId: string,
+    store: AppSessionStore,
+  ): Promise<void>;
 }
 
 class EventController implements IEventController {
