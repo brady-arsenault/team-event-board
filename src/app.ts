@@ -8,7 +8,7 @@ import {
   AuthorizationRequired,
 } from "./auth/errors";
 import type { UserRole } from "./auth/User";
-import { IApp } from "./contracts";
+import { IApp, IEventService } from "./contracts";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -38,6 +38,7 @@ class ExpressApp implements IApp {
     private readonly authController: IAuthController,
     private readonly logger: ILoggingService,
     private readonly eventController: IEventController,
+    private readonly eventService: IEventService,
   ) {
     this.app = express();
     this.registerMiddleware();
@@ -288,6 +289,7 @@ export function CreateApp(
   authController: IAuthController,
   logger: ILoggingService,
   eventController: IEventController,
+  eventService: IEventService,
 ): IApp {
-  return new ExpressApp(authController, logger, eventController);
+  return new ExpressApp(authController, logger, eventController, eventService);
 }
