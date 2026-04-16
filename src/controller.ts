@@ -97,7 +97,11 @@ class EventController implements IEventController {
       return;
     }
 
-    
+    res.render("events/edit", {
+      session,
+      event,
+      pageError: null,
+    });
   }
 
   async createEventFromForm(
