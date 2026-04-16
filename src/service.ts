@@ -65,7 +65,6 @@ class EventService implements IEventService, IRsvpService {
 
     async publishEvent(eventId: string, actingUser: IActingUser): Promise<Result<IEvent, PublishEventError>> {
         const event = await this.eventRepository.findById(eventId);
-
         if (event === null) {
             return Err(EventNotFoundError("Event not found."));
         }
@@ -91,7 +90,29 @@ class EventService implements IEventService, IRsvpService {
     }
 
     async cancelEvent(eventId: string, actingUser: IActingUser): Promise<Result<IEvent, CancelEventError>> {
-        throw new Error("Method not implemented.");
+        const event = await this.eventRepository.findById(eventId);
+        if (event === null) {
+            return Err(EventNotFoundError("Event not found."));
+        }
+
+        if (actingUser.role !== "admin" && event.organizerId !== actingUser.userId) {
+            return Err(UnauthorizedError("You are not allowed to cancel this event."));
+        }
+
+        if (event.status !== "published") {
+            return Err(InvalidStateError("Only published events can be cancelled."));
+        }
+
+        const updatedEvent = await this.eventRepository.update(eventId, {
+            status: "cancelled",
+            updatedAt: new Date(),
+        });
+
+        if (updatedEvent === null) {
+            return Err(EventNotFoundError("Event not found."));
+        }
+
+        return Ok(updatedEvent);
     }
 
     async listEvents(filter: ListEventsFilter): Promise<Result<IEvent[], ListEventsError>> {
