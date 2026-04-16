@@ -96,6 +96,7 @@ class EventService implements IEventService, IRsvpService {
 
         const now = new Date();
         let events = await this.eventRepository.list();
+        //Start with only published events that have not started yet
         events = events.filter((event) => {
             return event.status === "published" && event.startAt > now;
         });
@@ -104,6 +105,7 @@ class EventService implements IEventService, IRsvpService {
             events = events.filter((event) => event.category === filter.category);
         }
 
+        //This week meaning from now through the end of the current week
         if (filter.timeframe === "this-week") {
             const endOfWeek = new Date(now);
             const currentDay = now.getDay();
@@ -114,10 +116,10 @@ class EventService implements IEventService, IRsvpService {
 
             endOfWeek.setDate(now.getDate() + daysUntilSunday);
             endOfWeek.setHours(23, 59, 59, 999);
-
             events = events.filter((event) => event.startAt <= endOfWeek);
         }
 
+        //This weekend meaning Saturday through Sunday
         if (filter.timeframe === "this-weekend") {
             const currentDay = now.getDay();
             const weekendStart = new Date(now);
@@ -141,6 +143,7 @@ class EventService implements IEventService, IRsvpService {
             });
         }
 
+        //Show the earlier events first
         events.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
         return Ok(events);
     }
