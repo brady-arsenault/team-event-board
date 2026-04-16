@@ -72,11 +72,40 @@ class EventService implements IEventService, IRsvpService {
             return Err(InvalidInputError("endAt must be a valid date."));
         }
 
-        if (input.startAt !== undefined && input.endAt !== undefined && input.startAt >= input.endAt) {
+        const event = await this.eventRepository.findById(eventId);
+        if (event === null) {
+            return Err(EventNotFoundError("Event not found."));
+        }
+
+        if (actingUser.role !== "admin" && event.organizerId !== actingUser.userId) {
+            return Err(UnauthorizedError("You are not allowed to edit this event."));
+        }
+
+        if (event.status === "cancelled" || event.status === "past") {
+            return Err(InvalidStateError("Cancelled or past events cannot be edited."));
+        }
+
+        const startAt = input.startAt ?? event.startAt;
+        const endAt = input.endAt ?? event.endAt;
+        if (startAt >= endAt) {
             return Err(InvalidInputError("startAt must be before endAt."));
         }
 
-        throw new Error("Method not implemented.");
+        const changes: Partial<IEvent> = { updatedAt: new Date() };
+        if (input.title !== undefined) changes.title = input.title;
+        if (input.description !== undefined) changes.description = input.description;
+        if (input.location !== undefined) changes.location = input.location;
+        if (input.category !== undefined) changes.category = input.category;
+        if (input.capacity !== undefined) changes.capacity = input.capacity;
+        if (input.startAt !== undefined) changes.startAt = input.startAt;
+        if (input.endAt !== undefined) changes.endAt = input.endAt;
+
+        const updatedEvent = await this.eventRepository.update(eventId, changes);
+        if (updatedEvent === null) {
+            return Err(EventNotFoundError("Event not found."));
+        }
+
+        return Ok(updatedEvent);
     }
 
     async publishEvent(eventId: string, actingUser: IActingUser): Promise<Result<IEvent, PublishEventError>> {
