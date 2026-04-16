@@ -68,11 +68,11 @@ class EventService implements IEventService, IRsvpService {
         if (event === null) {
             return Err(EventNotFoundError("Event not found."));
         }
-
+        //Only the organizer or an admin can publish an event.
         if (actingUser.role !== "admin" && event.organizerId !== actingUser.userId) {
             return Err(UnauthorizedError("You are not allowed to publish this event."));
         }
-
+        //A draft event can move to published.
         if (event.status !== "draft") {
             return Err(InvalidStateError("Only draft events can be published."));
         }
@@ -94,11 +94,11 @@ class EventService implements IEventService, IRsvpService {
         if (event === null) {
             return Err(EventNotFoundError("Event not found."));
         }
-
+        //the organizer or an admin can cancel an event.
         if (actingUser.role !== "admin" && event.organizerId !== actingUser.userId) {
             return Err(UnauthorizedError("You are not allowed to cancel this event."));
         }
-
+        //published events can be cancelled.
         if (event.status !== "published") {
             return Err(InvalidStateError("Only published events can be cancelled."));
         }
