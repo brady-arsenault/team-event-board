@@ -53,7 +53,13 @@ class EventService implements IEventService {
 
 
     async getEventById(eventId: string, actingUser: IActingUser): Promise<Result<IEvent, GetEventByIdError>> {
-        throw new Error("Method not implemented.");
+        const event = await this.eventRepository.findById(eventId);
+        if (!event) {
+            return Err(EventNotFoundError(`Event with id ${eventId} not found.`));
+        } else if (event.status == "draft" && event.organizerId !== actingUser.userId && actingUser.role !== "admin") {
+            return Err(UnauthorizedError(`You do not have permission to view this event.`));
+        }
+        return Ok(event);
     }
 
     async updateEvent(eventId: string, input: UpdateEventInput, actingUser: IActingUser): Promise<Result<IEvent, UpdateEventError>> {
