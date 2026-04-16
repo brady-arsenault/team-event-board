@@ -1,10 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { CancelEventError, CreateEventError, CreateEventInput, EventNotFoundError, GetEventByIdError, GetUserRsvpsError, IActingUser, IEvent, IEventRepository, IEventService, IRsvp, IRsvpService, IUserRsvpDashboard, ListEventsError, ListEventsFilter, PublishEventError, SearchEventsError, SearchEventsInput, ToggleRsvpError, UnauthorizedError, UpdateEventError, UpdateEventInput, InvalidInputError, InvalidStateError } from "./contracts";
+import { CancelEventError, CreateEventError, CreateEventInput, EventNotFoundError, GetEventByIdError, IActingUser, IEvent, IEventRepository, IEventService, ListEventsError, ListEventsFilter, PublishEventError, SearchEventsError, SearchEventsInput, UnauthorizedError, UpdateEventError, UpdateEventInput, InvalidInputError, InvalidStateError } from "./contracts";
 import { Err, Ok, Result } from "./lib/result";
 import { ILoggingService } from "./service/LoggingService";
-import { IEventController } from "./controller";
 
-class EventService implements IEventService, IRsvpService {
+class EventService implements IEventService {
     private readonly eventRepository: IEventRepository;
     private readonly logger: ILoggingService;
 
@@ -12,16 +11,6 @@ class EventService implements IEventService, IRsvpService {
         this.eventRepository = eventRepository;
         this.logger = logger;
     }
-
-    async toggleRsvp(eventId: string, actingUser: IActingUser): Promise<Result<IRsvp, ToggleRsvpError>> {
-        throw new Error("Method not implemented.");
-    }
-
-    async getUserRsvps(actingUser: IActingUser): Promise<Result<IUserRsvpDashboard, GetUserRsvpsError>> {
-        throw new Error("Method not implemented.");
-    }
-
-
 
     private isValidCapacity(value: unknown): value is number | null {
         return value === null || (typeof value === "number" && Number.isInteger(value) && value > 0);
