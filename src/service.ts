@@ -60,6 +60,22 @@ class EventService implements IEventService, IRsvpService {
     }
 
     async updateEvent(eventId: string, input: UpdateEventInput, actingUser: IActingUser): Promise<Result<IEvent, UpdateEventError>> {
+        if (input.capacity !== undefined && !this.isValidCapacity(input.capacity)) {
+            return Err(InvalidInputError("capacity must be a positive integer or null."));
+        }
+
+        if (input.startAt !== undefined && !this.isValidDate(input.startAt)) {
+            return Err(InvalidInputError("startAt must be a valid date."));
+        }
+
+        if (input.endAt !== undefined && !this.isValidDate(input.endAt)) {
+            return Err(InvalidInputError("endAt must be a valid date."));
+        }
+
+        if (input.startAt !== undefined && input.endAt !== undefined && input.startAt >= input.endAt) {
+            return Err(InvalidInputError("startAt must be before endAt."));
+        }
+
         throw new Error("Method not implemented.");
     }
 
