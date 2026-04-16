@@ -8,7 +8,7 @@ import {
   AuthorizationRequired,
 } from "./auth/errors";
 import type { UserRole } from "./auth/User";
-import { CreateEventInput, IApp, IEventService } from "./contracts";
+import { CreateEventInput, IApp, IEventService, ListEventsFilter } from "./contracts";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -17,7 +17,7 @@ import {
   touchAppSession,
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
-import { IEventController } from "./controller";
+import type { IEventController } from "./controller";
 import { IRsvpController } from "./rsvp/RsvpController";
 import { IEventSearchController } from "./events/EventSearchController";
 
@@ -245,7 +245,6 @@ class ExpressApp implements IApp {
     );
 
     // ── Authenticated home page ──────────────────────────────────────
-    // TODO: Replace this placeholder with your project's main page.
 
     this.app.get(
       "/home",
@@ -256,10 +255,23 @@ class ExpressApp implements IApp {
 
         const browserSession = recordPageView(sessionStore(req));
         this.logger.info(`GET /home for ${browserSession.browserLabel}`);
-        res.render("home", { session: browserSession, pageError: null });
+
+        await this.eventController.showHome(
+          res,
+          {
+            category:
+              typeof req.query.category === "string"
+                ? (req.query.category as ListEventsFilter["category"])
+                : undefined,
+            timeframe:
+              typeof req.query.timeframe === "string"
+                ? (req.query.timeframe as ListEventsFilter["timeframe"])
+                : undefined,
+          },
+          sessionStore(req),
+        );
       }),
     );
-
 
     this.app.get(
       "/events/create",
@@ -278,6 +290,7 @@ class ExpressApp implements IApp {
         if (!this.requireAuthenticated(req, res)) {
           return;
         }
+
         const input: CreateEventInput = {
           title: typeof req.body.title === "string" ? req.body.title : "",
           description: typeof req.body.description === "string" ? req.body.description : "",
@@ -287,8 +300,9 @@ class ExpressApp implements IApp {
           startAt: req.body.startAt ? new Date(req.body.startAt) : new Date(NaN),
           endAt: req.body.endAt ? new Date(req.body.endAt) : new Date(NaN),
         };
+
         await this.eventController.createEventFromForm(res, input, sessionStore(req));
-      })
+      }),
     );
 
     this.app.get(
@@ -331,6 +345,9 @@ class ExpressApp implements IApp {
         };
 
         await this.eventController.updateEventFromForm(res, eventId, input, sessionStore(req));
+      }),
+    );
+
     // ── Feature 7: My RSVPs Dashboard (Phan Ha) ──────────────────────
 
     this.app.get(
