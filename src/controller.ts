@@ -1,10 +1,6 @@
 import type { Response } from "express";
 import type { ILoggingService } from "./service/LoggingService";
-<<<<<<< HEAD
-import type { IEventService, CreateEventInput, UpdateEventInput } from "./contracts";
-=======
-import type { IEventService, CreateEventInput, ListEventsFilter } from "./contracts";
->>>>>>> b213239 (feat: add home event list controller method)
+import type { IEventService, CreateEventInput, UpdateEventInput, ListEventsFilter } from "./contracts";
 import {
   getAuthenticatedUser,
   touchAppSession,
@@ -23,16 +19,15 @@ export interface IEventController {
     input: CreateEventInput,
     store: AppSessionStore,
   ): Promise<void>;
-<<<<<<< HEAD
   updateEventFromForm(
     res: Response,
     eventId: string,
     input: UpdateEventInput,
-=======
+    store: AppSessionStore,
+  ): Promise<void>;
   showHome(
     res: Response,
     filter: ListEventsFilter,
->>>>>>> b213239 (feat: add home event list controller method)
     store: AppSessionStore,
   ): Promise<void>;
 }
@@ -151,16 +146,10 @@ class EventController implements IEventController {
     res.redirect("/home");
   }
 
-<<<<<<< HEAD
   async updateEventFromForm(
     res: Response,
     eventId: string,
     input: UpdateEventInput,
-=======
-  async showHome(
-    res: Response,
-    filter: ListEventsFilter,
->>>>>>> b213239 (feat: add home event list controller method)
     store: AppSessionStore,
   ): Promise<void> {
     const session = touchAppSession(store);
@@ -174,7 +163,6 @@ class EventController implements IEventController {
       return;
     }
 
-<<<<<<< HEAD
     const result = await this.service.updateEvent(eventId, input, {
       userId: currentUser.userId,
       role: currentUser.role,
@@ -196,7 +184,30 @@ class EventController implements IEventController {
         pageError: result.value.message,
         eventId,
         input,
-=======
+      });
+      return;
+    }
+
+    this.logger.info(`Updated event ${result.value.id}`);
+    res.redirect("/home");
+  }
+
+  async showHome(
+    res: Response,
+    filter: ListEventsFilter,
+    store: AppSessionStore,
+  ): Promise<void> {
+    const session = touchAppSession(store);
+    const currentUser = getAuthenticatedUser(store);
+
+    if (!currentUser) {
+      res.status(401).render("partials/error", {
+        message: "Please log in to continue.",
+        layout: false,
+      });
+      return;
+    }
+
     const result = await this.service.listEvents(filter);
 
     if (result.ok === false) {
@@ -209,16 +220,10 @@ class EventController implements IEventController {
           category: filter.category ?? "",
           timeframe: filter.timeframe ?? "",
         },
->>>>>>> b213239 (feat: add home event list controller method)
       });
       return;
     }
 
-<<<<<<< HEAD
-    this.logger.info(`Updated event ${result.value.id}`);
-    res.redirect("/home");
-    }
-=======
     res.render("home", {
       session,
       pageError: null,
@@ -229,7 +234,6 @@ class EventController implements IEventController {
       },
     });
   }
->>>>>>> b213239 (feat: add home event list controller method)
 }
 
 export function CreateEventController(
