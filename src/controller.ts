@@ -207,7 +207,7 @@ class EventController implements IEventController {
     res.redirect("/home");
   }
 
-  async publishEventFromForm(
+  async publishEventFromForm(//added publish method to controller
     res: Response,
     eventId: string,
     store: AppSessionStore,
@@ -249,7 +249,7 @@ class EventController implements IEventController {
     res.redirect("/home");
   }
 
-  async cancelEventFromForm(
+  async cancelEventFromForm(//added cancel method to controller
     res: Response,
     eventId: string,
     store: AppSessionStore,

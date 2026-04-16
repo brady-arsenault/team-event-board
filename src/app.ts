@@ -348,7 +348,7 @@ class ExpressApp implements IApp {
       }),
     );
 
-    this.app.post(
+    this.app.post( //added publish method to app
       "/events/:id/publish",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) {
@@ -360,7 +360,7 @@ class ExpressApp implements IApp {
       }),
     );
 
-    this.app.post(
+    this.app.post( //added cancel method to app
       "/events/:id/cancel",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) {
