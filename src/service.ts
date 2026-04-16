@@ -1,12 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { CancelEventError, CreateEventError, CreateEventInput, EventNotFoundError, GetEventByIdError, GetUserRsvpsError, IActingUser, IEvent, IEventRepository, IEventService, IRsvp, IRsvpService, IUserRsvpDashboard, ListEventsError, ListEventsFilter, PublishEventError, SearchEventsError, SearchEventsInput, ToggleRsvpError, UnauthorizedError, UpdateEventError, UpdateEventInput, InvalidInputError, InvalidStateError } from "./contracts";
 import { Err, Ok, Result } from "./lib/result";
+import { ILoggingService } from "./service/LoggingService";
+import { IEventController } from "./controller";
 
 class EventService implements IEventService, IRsvpService {
     private readonly eventRepository: IEventRepository;
+    private readonly logger: ILoggingService;
 
-    constructor(eventRepository: IEventRepository) {
+    constructor(eventRepository: IEventRepository, logger: ILoggingService) {
         this.eventRepository = eventRepository;
+        this.logger = logger;
     }
 
     async toggleRsvp(eventId: string, actingUser: IActingUser): Promise<Result<IRsvp, ToggleRsvpError>> {
@@ -197,4 +201,11 @@ class EventService implements IEventService, IRsvpService {
         throw new Error("Method not implemented.");
     }
 
+}
+
+export function CreateEventService(
+  service: IEventRepository,
+  logger: ILoggingService,
+): IEventService {
+  return new EventService(service, logger);
 }

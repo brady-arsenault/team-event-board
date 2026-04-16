@@ -8,7 +8,7 @@ import {
   AuthorizationRequired,
 } from "./auth/errors";
 import type { UserRole } from "./auth/User";
-import { IApp } from "./contracts";
+import { CreateEventInput, IApp, IEventService } from "./contracts";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -17,6 +17,7 @@ import {
   touchAppSession,
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
+import { IEventController } from "./controller";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -36,6 +37,8 @@ class ExpressApp implements IApp {
   constructor(
     private readonly authController: IAuthController,
     private readonly logger: ILoggingService,
+    private readonly eventController: IEventController,
+    private readonly eventService: IEventService,
   ) {
     this.app = express();
     this.registerMiddleware();
@@ -253,6 +256,37 @@ class ExpressApp implements IApp {
       }),
     );
 
+
+    this.app.get(
+      "/events/create",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        await this.eventController.showCreateEventForm(res, sessionStore(req));
+      }),
+    );
+
+    this.app.post( 
+      "/events/create",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+        const input: CreateEventInput = {
+          title: typeof req.body.title === "string" ? req.body.title : "",
+          description: typeof req.body.description === "string" ? req.body.description : "",
+          location: typeof req.body.location === "string" ? req.body.location : "",
+          category: typeof req.body.category === "string" ? req.body.category : "",
+          capacity: req.body.capacity ? Number(req.body.capacity) : null,
+          startAt: req.body.startAt ? new Date(req.body.startAt) : new Date(NaN),
+          endAt: req.body.endAt ? new Date(req.body.endAt) : new Date(NaN),
+        };
+        await this.eventController.createEventFromForm(res, input, sessionStore(req));
+      })
+    );
+
     // ── Error handler ────────────────────────────────────────────────
 
     this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
@@ -273,6 +307,8 @@ class ExpressApp implements IApp {
 export function CreateApp(
   authController: IAuthController,
   logger: ILoggingService,
+  eventController: IEventController,
+  eventService: IEventService,
 ): IApp {
-  return new ExpressApp(authController, logger);
+  return new ExpressApp(authController, logger, eventController, eventService);
 }
