@@ -72,8 +72,79 @@ class EventService implements IEventService, IRsvpService {
     }
 
     async listEvents(filter: ListEventsFilter): Promise<Result<IEvent[], ListEventsError>> {
-        throw new Error("Method not implemented.");
+        const allowedCategories = [
+            "social",
+            "educational",
+            "volunteer",
+            "sports",
+            "arts",
+            "other",
+        ] as const;
+        const allowedTimeframes = [
+            "upcoming",
+            "this-week",
+            "this-weekend",
+        ] as const;
+
+        if (filter.category !== undefined && !allowedCategories.includes(filter.category)) {
+            return Err(InvalidInputError("Invalid category filter."));
+        }
+
+        if (filter.timeframe !== undefined && !allowedTimeframes.includes(filter.timeframe)) {
+            return Err(InvalidInputError("Invalid timeframe filter."));
+        }
+
+        const now = new Date();
+        let events = await this.eventRepository.list();
+        events = events.filter((event) => {
+            return event.status === "published" && event.startAt > now;
+        });
+
+        if (filter.category !== undefined) {
+            events = events.filter((event) => event.category === filter.category);
+        }
+
+        if (filter.timeframe === "this-week") {
+            const endOfWeek = new Date(now);
+            const currentDay = now.getDay();
+            let daysUntilSunday = 0;
+            if (currentDay !== 0) {
+                daysUntilSunday = 7 - currentDay;
+            }
+
+            endOfWeek.setDate(now.getDate() + daysUntilSunday);
+            endOfWeek.setHours(23, 59, 59, 999);
+
+            events = events.filter((event) => event.startAt <= endOfWeek);
+        }
+
+        if (filter.timeframe === "this-weekend") {
+            const currentDay = now.getDay();
+            const weekendStart = new Date(now);
+            const weekendEnd = new Date(now);
+            let daysUntilSaturday = 0;
+            let daysUntilSunday = 0;
+            if (currentDay === 0) {
+                daysUntilSaturday = -1;
+                daysUntilSunday = 0;
+            } else {
+                daysUntilSaturday = 6 - currentDay;
+                daysUntilSunday = 7 - currentDay;
+            }
+
+            weekendStart.setDate(now.getDate() + daysUntilSaturday);
+            weekendStart.setHours(0, 0, 0, 0);
+            weekendEnd.setDate(now.getDate() + daysUntilSunday);
+            weekendEnd.setHours(23, 59, 59, 999);
+            events = events.filter((event) => {
+                return event.startAt >= weekendStart && event.startAt <= weekendEnd;
+            });
+        }
+
+        events.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+        return Ok(events);
     }
+
 
     async searchEvents(input: SearchEventsInput): Promise<Result<IEvent[], SearchEventsError>> {
         throw new Error("Method not implemented.");
