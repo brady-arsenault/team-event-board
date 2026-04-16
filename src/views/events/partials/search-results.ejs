@@ -1,0 +1,28 @@
+<div class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+  <% if (events.length === 0) { %>
+    <p class="text-slate-500 m-0">
+      <% if (query && query.trim() !== "") { %>
+        No events match &ldquo;<%= query %>&rdquo;. Try a different keyword.
+      <% } else { %>
+        No published upcoming events yet.
+      <% } %>
+    </p>
+  <% } else { %>
+    <p class="text-sm text-slate-500 mb-4">
+      <%= events.length %> <%= events.length === 1 ? "event" : "events" %> found.
+    </p>
+    <ul class="list-none p-0 m-0 space-y-3">
+      <% events.forEach(function (event) { %>
+        <li class="p-4 border border-slate-200 rounded-xl bg-slate-50">
+          <h3 class="text-lg font-semibold text-slate-900 mb-1">
+            <%= event.title %>
+          </h3>
+          <p class="text-sm text-slate-500 mb-2">
+            <%= event.startAt.toLocaleString() %> &middot; <%= event.location %>
+          </p>
+          <p class="text-sm text-slate-700 m-0"><%= event.description %></p>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+</div>
