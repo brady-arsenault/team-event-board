@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { CancelEventError, CreateEventError, CreateEventInput, GetEventByIdError, GetUserRsvpsError, IActingUser, IEvent, IEventRepository, IEventService, IRsvp, IRsvpService, IUserRsvpDashboard, ListEventsError, ListEventsFilter, PublishEventError, SearchEventsError, SearchEventsInput, ToggleRsvpError, UpdateEventError, UpdateEventInput, InvalidInputError } from "./contracts";
+import { CancelEventError, CreateEventError, CreateEventInput, EventNotFoundError, GetEventByIdError, GetUserRsvpsError, IActingUser, IEvent, IEventRepository, IEventService, IRsvp, IRsvpService, IUserRsvpDashboard, ListEventsError, ListEventsFilter, PublishEventError, SearchEventsError, SearchEventsInput, ToggleRsvpError, UnauthorizedError, UpdateEventError, UpdateEventInput, InvalidInputError, InvalidStateError } from "./contracts";
 import { Err, Ok, Result } from "./lib/result";
 
 class EventService implements IEventService, IRsvpService {
@@ -64,7 +64,30 @@ class EventService implements IEventService, IRsvpService {
     }
 
     async publishEvent(eventId: string, actingUser: IActingUser): Promise<Result<IEvent, PublishEventError>> {
-        throw new Error("Method not implemented.");
+        const event = await this.eventRepository.findById(eventId);
+
+        if (event === null) {
+            return Err(EventNotFoundError("Event not found."));
+        }
+
+        if (actingUser.role !== "admin" && event.organizerId !== actingUser.userId) {
+            return Err(UnauthorizedError("You are not allowed to publish this event."));
+        }
+
+        if (event.status !== "draft") {
+            return Err(InvalidStateError("Only draft events can be published."));
+        }
+
+        const updatedEvent = await this.eventRepository.update(eventId, {
+            status: "published",
+            updatedAt: new Date(),
+        });
+
+        if (updatedEvent === null) {
+            return Err(EventNotFoundError("Event not found."));
+        }
+
+        return Ok(updatedEvent);
     }
 
     async cancelEvent(eventId: string, actingUser: IActingUser): Promise<Result<IEvent, CancelEventError>> {
