@@ -39,11 +39,58 @@
     </p>
   </div>
 
-  <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
-    <p class="text-sm text-slate-500">
-      Filter controls will go here.
-    </p>
-  </div>
+  <form action="/home" method="GET" class="grid gap-4 md:grid-cols-3">
+    <div>
+      <label for="category" class="block text-sm font-medium text-slate-700 mb-2">
+        Category
+      </label>
+      <select
+        id="category"
+        name="category"
+        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700"
+      >
+        <option value="">All categories</option>
+        <option value="social" <%= typeof filters !== "undefined" && filters.category === "social" ? "selected" : "" %>>Social</option>
+        <option value="educational" <%= typeof filters !== "undefined" && filters.category === "educational" ? "selected" : "" %>>Educational</option>
+        <option value="volunteer" <%= typeof filters !== "undefined" && filters.category === "volunteer" ? "selected" : "" %>>Volunteer</option>
+        <option value="sports" <%= typeof filters !== "undefined" && filters.category === "sports" ? "selected" : "" %>>Sports</option>
+        <option value="arts" <%= typeof filters !== "undefined" && filters.category === "arts" ? "selected" : "" %>>Arts</option>
+        <option value="other" <%= typeof filters !== "undefined" && filters.category === "other" ? "selected" : "" %>>Other</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="timeframe" class="block text-sm font-medium text-slate-700 mb-2">
+        Timeframe
+      </label>
+      <select
+        id="timeframe"
+        name="timeframe"
+        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700"
+      >
+        <option value="">All upcoming</option>
+        <option value="upcoming" <%= typeof filters !== "undefined" && filters.timeframe === "upcoming" ? "selected" : "" %>>Upcoming</option>
+        <option value="this-week" <%= typeof filters !== "undefined" && filters.timeframe === "this-week" ? "selected" : "" %>>This week</option>
+        <option value="this-weekend" <%= typeof filters !== "undefined" && filters.timeframe === "this-weekend" ? "selected" : "" %>>This weekend</option>
+      </select>
+    </div>
+
+    <div class="flex items-end gap-3">
+      <button
+        type="submit"
+        class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"
+      >
+        Apply Filters
+      </button>
+
+      <a
+        href="/home"
+        class="inline-flex items-center px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50"
+      >
+        Clear
+      </a>
+    </div>
+  </form>
 </section>
 
 <section class="max-w-5xl p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
