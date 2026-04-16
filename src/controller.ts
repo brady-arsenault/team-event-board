@@ -8,6 +8,7 @@ import {
 } from "./session/AppSession";
 
 export interface IEventController {
+  showCreateEventForm(res: Response, store: AppSessionStore): Promise<void>;
   createEventFromForm(
     res: Response,
     input: CreateEventInput,
@@ -20,6 +21,24 @@ class EventController implements IEventController {
     private readonly service: IEventService,
     private readonly logger: ILoggingService,
   ) {}
+
+  async showCreateEventForm(res: Response, store: AppSessionStore): Promise<void> {
+    const session = touchAppSession(store);
+    const currentUser = getAuthenticatedUser(store);
+
+    if (!currentUser) {
+      res.status(401).render("partials/error", {
+        message: "Please log in to continue.",
+        layout: false,
+      });
+      return;
+    }
+
+    res.render("events/create", {
+      session,
+      pageError: null,
+    });
+  }
 
   async createEventFromForm(
     res: Response,
