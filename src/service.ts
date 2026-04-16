@@ -1,27 +1,20 @@
 import { randomUUID } from "node:crypto";
-import { CancelEventError, CreateEventError, CreateEventInput, EventNotFoundError, GetEventByIdError, GetUserRsvpsError, IActingUser, IEvent, IEventRepository, IEventService, IRsvp, IRsvpService, IUserRsvpDashboard, ListEventsError, ListEventsFilter, PublishEventError, SearchEventsError, SearchEventsInput, ToggleRsvpError, UnauthorizedError, UpdateEventError, UpdateEventInput, InvalidInputError, InvalidStateError } from "./contracts";
+import { CancelEventError, CreateEventError, CreateEventInput, EventNotFoundError, GetEventByIdError, IActingUser, IEvent, IEventRepository, IEventService, ListEventsError, ListEventsFilter, PublishEventError, SearchEventsError, SearchEventsInput, UnauthorizedError, UpdateEventError, UpdateEventInput, InvalidInputError, InvalidStateError } from "./contracts";
 import { Err, Ok, Result } from "./lib/result";
 import { ILoggingService } from "./service/LoggingService";
 import { IEventController } from "./controller";
+import { CreateEventSearchService, IEventSearchService } from "./events/EventSearchService";
 
-class EventService implements IEventService, IRsvpService {
+class EventService implements IEventService {
     private readonly eventRepository: IEventRepository;
+    private readonly eventSearchService: IEventSearchService;
     private readonly logger: ILoggingService;
 
     constructor(eventRepository: IEventRepository, logger: ILoggingService) {
         this.eventRepository = eventRepository;
+        this.eventSearchService = CreateEventSearchService(eventRepository);
         this.logger = logger;
     }
-
-    async toggleRsvp(eventId: string, actingUser: IActingUser): Promise<Result<IRsvp, ToggleRsvpError>> {
-        throw new Error("Method not implemented.");
-    }
-
-    async getUserRsvps(actingUser: IActingUser): Promise<Result<IUserRsvpDashboard, GetUserRsvpsError>> {
-        throw new Error("Method not implemented.");
-    }
-
-
 
     private isValidCapacity(value: unknown): value is number | null {
         return value === null || (typeof value === "number" && Number.isInteger(value) && value > 0);
@@ -242,8 +235,9 @@ class EventService implements IEventService, IRsvpService {
     }
 
 
+    // Feature 10 — Event Search (Phan Ha). Delegates to src/events/EventSearchService.ts.
     async searchEvents(input: SearchEventsInput): Promise<Result<IEvent[], SearchEventsError>> {
-        throw new Error("Method not implemented.");
+        return this.eventSearchService.searchEvents(input);
     }
 
 }
