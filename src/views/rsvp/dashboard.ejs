@@ -1,0 +1,81 @@
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
+  <h1 class="text-3xl font-bold text-slate-900 mb-2">My RSVPs</h1>
+  <p class="text-slate-500 m-0">
+    Events you have responded to, grouped into upcoming and past.
+  </p>
+</section>
+
+<% if (pageError) { %>
+  <%- include("../partials/error", { message: pageError }) %>
+<% } %>
+
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+  <h2 class="text-xl font-semibold text-slate-900 mb-4">Upcoming</h2>
+
+  <% if (upcoming.length === 0) { %>
+    <p class="text-slate-500 m-0">
+      You have no upcoming RSVPs. Browse events to find something to attend.
+    </p>
+  <% } else { %>
+    <ul class="list-none p-0 m-0 space-y-3">
+      <% upcoming.forEach(function (item) { %>
+        <li class="p-4 border border-slate-200 rounded-xl bg-slate-50">
+          <div class="flex items-start justify-between gap-3 flex-wrap">
+            <div class="flex-1 min-w-0">
+              <h3 class="text-lg font-semibold text-slate-900 mb-1">
+                <%= item.event.title %>
+              </h3>
+              <p class="text-sm text-slate-500 mb-1">
+                <%= item.event.startAt.toLocaleString() %> &middot; <%= item.event.location %>
+              </p>
+              <span class="inline-block text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                <%= item.rsvp.status %>
+              </span>
+            </div>
+            <form
+              method="post"
+              action="/events/<%= item.event.id %>/rsvp"
+              hx-post="/events/<%= item.event.id %>/rsvp"
+              hx-target="closest li"
+              hx-swap="outerHTML"
+              class="m-0"
+            >
+              <button
+                type="submit"
+                class="px-3 py-2 rounded-lg bg-white text-red-700 border border-red-200 cursor-pointer hover:bg-red-50 text-sm font-medium"
+              >
+                Cancel RSVP
+              </button>
+            </form>
+          </div>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+</section>
+
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+  <h2 class="text-xl font-semibold text-slate-900 mb-4">Past &amp; Cancelled</h2>
+
+  <% if (past.length === 0) { %>
+    <p class="text-slate-500 m-0">
+      No past or cancelled RSVPs yet.
+    </p>
+  <% } else { %>
+    <ul class="list-none p-0 m-0 space-y-3">
+      <% past.forEach(function (item) { %>
+        <li class="p-4 border border-slate-200 rounded-xl bg-slate-50 opacity-75">
+          <h3 class="text-lg font-semibold text-slate-700 mb-1">
+            <%= item.event.title %>
+          </h3>
+          <p class="text-sm text-slate-500 mb-1">
+            <%= item.event.startAt.toLocaleString() %> &middot; <%= item.event.location %>
+          </p>
+          <span class="inline-block text-xs font-medium px-2 py-1 rounded-full bg-slate-200 text-slate-700">
+            <%= item.rsvp.status === "cancelled" ? "cancelled" : item.event.status %>
+          </span>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+</section>
