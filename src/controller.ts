@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import type { ILoggingService } from "./service/LoggingService";
-import type { IEventService, CreateEventInput } from "./contracts";
+import type { IEventService, CreateEventInput, ListEventsFilter } from "./contracts";
 import {
   getAuthenticatedUser,
   touchAppSession,
@@ -12,6 +12,11 @@ export interface IEventController {
   createEventFromForm(
     res: Response,
     input: CreateEventInput,
+    store: AppSessionStore,
+  ): Promise<void>;
+  showHome(
+    res: Response,
+    filter: ListEventsFilter,
     store: AppSessionStore,
   ): Promise<void>;
 }
@@ -75,6 +80,49 @@ class EventController implements IEventController {
 
     this.logger.info(`Created event ${result.value.id}`);
     res.redirect("/home");
+  }
+
+  async showHome(
+    res: Response,
+    filter: ListEventsFilter,
+    store: AppSessionStore,
+  ): Promise<void> {
+    const session = touchAppSession(store);
+    const currentUser = getAuthenticatedUser(store);
+
+    if (!currentUser) {
+      res.status(401).render("partials/error", {
+        message: "Please log in to continue.",
+        layout: false,
+      });
+      return;
+    }
+
+    const result = await this.service.listEvents(filter);
+
+    if (result.ok === false) {
+      this.logger.warn(`List events failed: ${result.value.message}`);
+      res.status(400).render("home", {
+        session,
+        pageError: result.value.message,
+        events: [],
+        filters: {
+          category: filter.category ?? "",
+          timeframe: filter.timeframe ?? "",
+        },
+      });
+      return;
+    }
+
+    res.render("home", {
+      session,
+      pageError: null,
+      events: result.value,
+      filters: {
+        category: filter.category ?? "",
+        timeframe: filter.timeframe ?? "",
+      },
+    });
   }
 }
 
