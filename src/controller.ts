@@ -86,7 +86,17 @@ class EventController implements IEventController {
 
     const event = result.value;
 
-    
+    if (event.organizerId !== currentUser.userId) {
+      this.logger.warn(
+        `Blocked edit form access for user ${currentUser.userId} on event ${eventId}`,
+      );
+      res.status(403).render("partials/error", {
+        message: "Only the event organizer may edit this event.",
+        layout: false,
+      });
+      return;
+    }
+
     
   }
 
