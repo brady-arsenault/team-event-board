@@ -133,7 +133,7 @@ export interface CreateEventInput {
 export type CreateEventError = UnauthorizedError | InvalidInputError;
 
 // Feature 2 — Event Detail Page (Gautham)
-export type GetEventByIdError = EventNotFoundError;
+export type GetEventByIdError = UnauthorizedError | EventNotFoundError;
 
 // Feature 3 — Event Editing (Brady)
 export interface UpdateEventInput {
