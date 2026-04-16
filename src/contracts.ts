@@ -158,6 +158,8 @@ export type ToggleRsvpError =
   | UnauthorizedError
   | InvalidStateError;
 
+export type GetEventRsvpError = EventNotFoundError;
+
 // Feature 5 — Event Publishing & Cancellation (David)
 export type PublishEventError =
   | EventNotFoundError
@@ -241,6 +243,10 @@ export interface IRsvpService {
     eventId: string,
     actingUser: IActingUser,
   ): Promise<Result<IRsvp, ToggleRsvpError>>;
+  getEventRsvp(
+    eventId: string,
+    actingUser: IActingUser,
+  ): Promise<Result<IRsvp | null, GetEventRsvpError>>;
   // Feature 7
   getUserRsvps(
     actingUser: IActingUser,
