@@ -29,6 +29,7 @@ export interface IEventController {
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void>;
 }
 
@@ -196,6 +197,7 @@ class EventController implements IEventController {
         res: Response,
         eventId: string,
         store: AppSessionStore,
+        isHtmx: boolean,
       ): Promise<void> {
         const session = touchAppSession(store);
         const currentUser = getAuthenticatedUser(store);
@@ -231,6 +233,7 @@ class EventController implements IEventController {
           session,
           event,
           pageError: null,
+          layout: isHtmx ? false : undefined, // if HTMX request, render without layout
         });
       }
 }
