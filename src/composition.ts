@@ -13,6 +13,8 @@ import { CreateInMemoryEventRepository } from "./repository/InMemoryEventReposit
 import { CreateInMemoryRsvpRepository } from "./repository/InMemoryRsvpRepository";
 import { CreateRsvpService } from "./rsvp/RsvpService";
 import { CreateRsvpController } from "./rsvp/RsvpController";
+import { CreateEventSearchService } from "./events/EventSearchService";
+import { CreateEventSearchController } from "./events/EventSearchController";
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
@@ -33,11 +35,16 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const rsvpService = CreateRsvpService(eventRepository, rsvpRepository, resolvedLogger);
   const rsvpController = CreateRsvpController(rsvpService, resolvedLogger);
 
+  // Feature 10 — Event Search (Phan Ha)
+  const eventSearchService = CreateEventSearchService(eventRepository);
+  const eventSearchController = CreateEventSearchController(eventSearchService, resolvedLogger);
+
   return CreateApp(
     authController,
     resolvedLogger,
     eventController,
     eventService,
     rsvpController,
+    eventSearchController,
   );
 }
