@@ -8,7 +8,7 @@ import {
   AuthorizationRequired,
 } from "./auth/errors";
 import type { UserRole } from "./auth/User";
-import { IApp } from "./contracts";
+import { IApp, ListEventsFilter } from "./contracts";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -17,6 +17,7 @@ import {
   touchAppSession,
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
+import type { IEventController } from "./controller";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -35,6 +36,7 @@ class ExpressApp implements IApp {
 
   constructor(
     private readonly authController: IAuthController,
+    private readonly eventController: IEventController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -249,7 +251,21 @@ class ExpressApp implements IApp {
 
         const browserSession = recordPageView(sessionStore(req));
         this.logger.info(`GET /home for ${browserSession.browserLabel}`);
-        res.render("home", { session: browserSession, pageError: null });
+
+        await this.eventController.showHome(
+          res,
+          {
+            category:
+              typeof req.query.category === "string"
+                ? (req.query.category as ListEventsFilter["category"])
+                : undefined,
+            timeframe:
+              typeof req.query.timeframe === "string"
+                ? (req.query.timeframe as ListEventsFilter["timeframe"])
+                : undefined,
+          },
+          sessionStore(req),
+        );
       }),
     );
 
@@ -272,7 +288,8 @@ class ExpressApp implements IApp {
 
 export function CreateApp(
   authController: IAuthController,
+  eventController: IEventController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, logger);
+  return new ExpressApp(authController, eventController, logger);
 }

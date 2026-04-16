@@ -198,3 +198,7 @@ class EventService implements IEventService, IRsvpService {
     }
 
 }
+
+export function CreateEventService(eventRepository: IEventRepository): IEventService & IRsvpService {
+  return new EventService(eventRepository);
+}
