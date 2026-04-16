@@ -9,6 +9,11 @@ import {
 
 export interface IEventController {
   showCreateEventForm(res: Response, store: AppSessionStore): Promise<void>;
+  showEditEventForm(
+    res: Response,
+    eventId: string,
+    store: AppSessionStore,
+  ): Promise<void>;
   createEventFromForm(
     res: Response,
     input: CreateEventInput,
@@ -44,6 +49,45 @@ class EventController implements IEventController {
       session,
       pageError: null,
     });
+  }
+
+  async showEditEventForm(
+    res: Response,
+    eventId: string,
+    store: AppSessionStore,
+  ): Promise<void> {
+    const session = touchAppSession(store);
+    const currentUser = getAuthenticatedUser(store);
+
+    if (!currentUser) {
+      res.status(401).render("partials/error", {
+        message: "Please log in to continue.",
+        layout: false,
+      });
+      return;
+    }
+
+    const result = await this.service.getEventById(eventId, {
+      userId: currentUser.userId,
+      role: currentUser.role,
+      displayName: currentUser.displayName,
+    });
+
+    if (result.ok === false) {
+      const status = result.value.name === "EventNotFoundError" ? 404 : 403;
+      const log = status >= 500 ? this.logger.error : this.logger.warn;
+      log.call(this.logger, `Show edit event failed: ${result.value.message}`);
+      res.status(status).render("partials/error", {
+        message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    const event = result.value;
+
+    
+    
   }
 
   async createEventFromForm(
