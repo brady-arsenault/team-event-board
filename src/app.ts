@@ -18,6 +18,7 @@ import {
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
 import { IEventController } from "./controller";
+import { IEventSearchController } from "./events/EventSearchController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -39,6 +40,7 @@ class ExpressApp implements IApp {
     private readonly logger: ILoggingService,
     private readonly eventController: IEventController,
     private readonly eventService: IEventService,
+    private readonly eventSearchController: IEventSearchController,
   ) {
     this.app = express();
     this.registerMiddleware();
@@ -287,6 +289,22 @@ class ExpressApp implements IApp {
       })
     );
 
+    // ── Feature 10: Event Search (Phan Ha) ────────────────────────────
+
+    this.app.get(
+      "/events/search",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        const query = typeof req.query.q === "string" ? req.query.q : "";
+        await this.eventSearchController.showSearch(
+          res,
+          sessionStore(req),
+          query,
+          this.isHtmxRequest(req),
+        );
+      }),
+    );
+
     // ── Error handler ────────────────────────────────────────────────
 
     this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
@@ -309,6 +327,13 @@ export function CreateApp(
   logger: ILoggingService,
   eventController: IEventController,
   eventService: IEventService,
+  eventSearchController: IEventSearchController,
 ): IApp {
-  return new ExpressApp(authController, logger, eventController, eventService);
+  return new ExpressApp(
+    authController,
+    logger,
+    eventController,
+    eventService,
+    eventSearchController,
+  );
 }

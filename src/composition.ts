@@ -9,6 +9,9 @@ import { CreateLoggingService } from "./service/LoggingService";
 import type { ILoggingService } from "./service/LoggingService";
 import { CreateEventController } from "./controller";
 import { CreateEventService } from "./service";
+import { CreateInMemoryEventRepository } from "./repository/InMemoryEventRepository";
+import { CreateEventSearchService } from "./events/EventSearchService";
+import { CreateEventSearchController } from "./events/EventSearchController";
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
@@ -19,10 +22,20 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const authService = CreateAuthService(authUsers, passwordHasher);
   const adminUserService = CreateAdminUserService(authUsers, passwordHasher);
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
-  const eventRepository = null as any; // TODO: implement an IEventRepository and replace this
+
+  const eventRepository = CreateInMemoryEventRepository();
   const eventService = CreateEventService(eventRepository, resolvedLogger);
   const eventController = CreateEventController(eventService, resolvedLogger);
 
+  // Feature 10 — Event Search (Phan Ha)
+  const eventSearchService = CreateEventSearchService(eventRepository);
+  const eventSearchController = CreateEventSearchController(eventSearchService, resolvedLogger);
 
-  return CreateApp(authController, resolvedLogger, eventController, eventService);
+  return CreateApp(
+    authController,
+    resolvedLogger,
+    eventController,
+    eventService,
+    eventSearchController,
+  );
 }
