@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import type { ILoggingService } from "./service/LoggingService";
-import type { IEventService, CreateEventInput } from "./contracts";
+import type { IEventService, CreateEventInput, UpdateEventInput } from "./contracts";
 import {
   getAuthenticatedUser,
   touchAppSession,
@@ -12,6 +12,12 @@ export interface IEventController {
   createEventFromForm(
     res: Response,
     input: CreateEventInput,
+    store: AppSessionStore,
+  ): Promise<void>;
+  updateEventFromForm(
+    res: Response,
+    eventId: string,
+    input: UpdateEventInput,
     store: AppSessionStore,
   ): Promise<void>;
 }
@@ -76,6 +82,52 @@ class EventController implements IEventController {
     this.logger.info(`Created event ${result.value.id}`);
     res.redirect("/home");
   }
+
+  async updateEventFromForm(
+    res: Response,
+    eventId: string,
+    input: UpdateEventInput,
+    store: AppSessionStore,
+  ): Promise<void> {
+    const session = touchAppSession(store);
+    const currentUser = getAuthenticatedUser(store);
+
+    if (!currentUser) {
+      res.status(401).render("partials/error", {
+        message: "Please log in to continue.",
+        layout: false,
+      });
+      return;
+    }
+
+    const result = await this.service.updateEvent(eventId, input, {
+      userId: currentUser.userId,
+      role: currentUser.role,
+      displayName: currentUser.displayName,
+    });
+
+    if (result.ok === false) {
+      let status = 400;
+      if (result.value.name === "EventNotFoundError") {
+        status = 404;
+      } else if (result.value.name === "UnauthorizedError") {
+        status = 403;
+      }
+
+      const log = status >= 500 ? this.logger.error : this.logger.warn;
+      log.call(this.logger, `Update event failed: ${result.value.message}`);
+      res.status(status).render("events/edit", {
+        session,
+        pageError: result.value.message,
+        eventId,
+        input,
+      });
+      return;
+    }
+
+    this.logger.info(`Updated event ${result.value.id}`);
+    res.redirect("/home");
+    }
 }
 
 export function CreateEventController(
