@@ -2,13 +2,17 @@ import { randomUUID } from "node:crypto";
 import { CancelEventError, CreateEventError, CreateEventInput, EventNotFoundError, GetEventByIdError, IActingUser, IEvent, IEventRepository, IEventService, ListEventsError, ListEventsFilter, PublishEventError, SearchEventsError, SearchEventsInput, UnauthorizedError, UpdateEventError, UpdateEventInput, InvalidInputError, InvalidStateError } from "./contracts";
 import { Err, Ok, Result } from "./lib/result";
 import { ILoggingService } from "./service/LoggingService";
+import { IEventController } from "./controller";
+import { CreateEventSearchService, IEventSearchService } from "./events/EventSearchService";
 
 class EventService implements IEventService {
     private readonly eventRepository: IEventRepository;
+    private readonly eventSearchService: IEventSearchService;
     private readonly logger: ILoggingService;
 
     constructor(eventRepository: IEventRepository, logger: ILoggingService) {
         this.eventRepository = eventRepository;
+        this.eventSearchService = CreateEventSearchService(eventRepository);
         this.logger = logger;
     }
 
@@ -231,8 +235,9 @@ class EventService implements IEventService {
     }
 
 
+    // Feature 10 — Event Search (Phan Ha). Delegates to src/events/EventSearchService.ts.
     async searchEvents(input: SearchEventsInput): Promise<Result<IEvent[], SearchEventsError>> {
-        throw new Error("Method not implemented.");
+        return this.eventSearchService.searchEvents(input);
     }
 
 }
