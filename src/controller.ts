@@ -1,6 +1,10 @@
 import type { Response } from "express";
 import type { ILoggingService } from "./service/LoggingService";
+<<<<<<< HEAD
 import type { IEventService, CreateEventInput, UpdateEventInput } from "./contracts";
+=======
+import type { IEventService, CreateEventInput, ListEventsFilter } from "./contracts";
+>>>>>>> b213239 (feat: add home event list controller method)
 import {
   getAuthenticatedUser,
   touchAppSession,
@@ -19,10 +23,16 @@ export interface IEventController {
     input: CreateEventInput,
     store: AppSessionStore,
   ): Promise<void>;
+<<<<<<< HEAD
   updateEventFromForm(
     res: Response,
     eventId: string,
     input: UpdateEventInput,
+=======
+  showHome(
+    res: Response,
+    filter: ListEventsFilter,
+>>>>>>> b213239 (feat: add home event list controller method)
     store: AppSessionStore,
   ): Promise<void>;
 }
@@ -141,10 +151,16 @@ class EventController implements IEventController {
     res.redirect("/home");
   }
 
+<<<<<<< HEAD
   async updateEventFromForm(
     res: Response,
     eventId: string,
     input: UpdateEventInput,
+=======
+  async showHome(
+    res: Response,
+    filter: ListEventsFilter,
+>>>>>>> b213239 (feat: add home event list controller method)
     store: AppSessionStore,
   ): Promise<void> {
     const session = touchAppSession(store);
@@ -158,6 +174,7 @@ class EventController implements IEventController {
       return;
     }
 
+<<<<<<< HEAD
     const result = await this.service.updateEvent(eventId, input, {
       userId: currentUser.userId,
       role: currentUser.role,
@@ -179,13 +196,40 @@ class EventController implements IEventController {
         pageError: result.value.message,
         eventId,
         input,
+=======
+    const result = await this.service.listEvents(filter);
+
+    if (result.ok === false) {
+      this.logger.warn(`List events failed: ${result.value.message}`);
+      res.status(400).render("home", {
+        session,
+        pageError: result.value.message,
+        events: [],
+        filters: {
+          category: filter.category ?? "",
+          timeframe: filter.timeframe ?? "",
+        },
+>>>>>>> b213239 (feat: add home event list controller method)
       });
       return;
     }
 
+<<<<<<< HEAD
     this.logger.info(`Updated event ${result.value.id}`);
     res.redirect("/home");
     }
+=======
+    res.render("home", {
+      session,
+      pageError: null,
+      events: result.value,
+      filters: {
+        category: filter.category ?? "",
+        timeframe: filter.timeframe ?? "",
+      },
+    });
+  }
+>>>>>>> b213239 (feat: add home event list controller method)
 }
 
 export function CreateEventController(
