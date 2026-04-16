@@ -18,6 +18,7 @@ import {
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
 import { IEventController } from "./controller";
+import { IRsvpController } from "./rsvp/RsvpController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -39,6 +40,7 @@ class ExpressApp implements IApp {
     private readonly logger: ILoggingService,
     private readonly eventController: IEventController,
     private readonly eventService: IEventService,
+    private readonly rsvpController: IRsvpController,
   ) {
     this.app = express();
     this.registerMiddleware();
@@ -268,7 +270,7 @@ class ExpressApp implements IApp {
       }),
     );
 
-    this.app.post( 
+    this.app.post(
       "/events/create",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) {
@@ -285,6 +287,16 @@ class ExpressApp implements IApp {
         };
         await this.eventController.createEventFromForm(res, input, sessionStore(req));
       })
+    );
+
+    // ── Feature 7: My RSVPs Dashboard (Phan Ha) ──────────────────────
+
+    this.app.get(
+      "/my-rsvps",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.rsvpController.showDashboard(res, sessionStore(req));
+      }),
     );
 
     // ── Error handler ────────────────────────────────────────────────
@@ -309,6 +321,13 @@ export function CreateApp(
   logger: ILoggingService,
   eventController: IEventController,
   eventService: IEventService,
+  rsvpController: IRsvpController,
 ): IApp {
-  return new ExpressApp(authController, logger, eventController, eventService);
+  return new ExpressApp(
+    authController,
+    logger,
+    eventController,
+    eventService,
+    rsvpController,
+  );
 }

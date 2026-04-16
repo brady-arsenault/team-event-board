@@ -10,6 +10,9 @@ import type { ILoggingService } from "./service/LoggingService";
 import { CreateEventController } from "./controller";
 import { CreateEventService } from "./service";
 import { CreateInMemoryEventRepository } from "./repository/InMemoryEventRepository";
+import { CreateInMemoryRsvpRepository } from "./repository/InMemoryRsvpRepository";
+import { CreateRsvpService } from "./rsvp/RsvpService";
+import { CreateRsvpController } from "./rsvp/RsvpController";
 
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
@@ -22,8 +25,19 @@ export function createComposedApp(logger?: ILoggingService): IApp {
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
   const eventRepository = CreateInMemoryEventRepository();
+  const rsvpRepository = CreateInMemoryRsvpRepository();
   const eventService = CreateEventService(eventRepository, resolvedLogger);
   const eventController = CreateEventController(eventService, resolvedLogger);
 
-  return CreateApp(authController, resolvedLogger, eventController, eventService);
+  // Feature 7 — My RSVPs Dashboard (Phan Ha)
+  const rsvpService = CreateRsvpService(eventRepository, rsvpRepository, resolvedLogger);
+  const rsvpController = CreateRsvpController(rsvpService, resolvedLogger);
+
+  return CreateApp(
+    authController,
+    resolvedLogger,
+    eventController,
+    eventService,
+    rsvpController,
+  );
 }
