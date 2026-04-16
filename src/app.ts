@@ -299,6 +299,37 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.post(
+      "/events/edit/:id",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        const input = {
+          title: typeof req.body.title === "string" ? req.body.title : undefined,
+          description: typeof req.body.description === "string" ? req.body.description : undefined,
+          location: typeof req.body.location === "string" ? req.body.location : undefined,
+          category: typeof req.body.category === "string" ? req.body.category : undefined,
+          capacity:
+            req.body.capacity === "" || req.body.capacity === undefined
+              ? undefined
+              : Number(req.body.capacity),
+          startAt:
+            typeof req.body.startAt === "string" && req.body.startAt
+              ? new Date(req.body.startAt)
+              : undefined,
+          endAt:
+            typeof req.body.endAt === "string" && req.body.endAt
+              ? new Date(req.body.endAt)
+              : undefined,
+        };
+
+        await this.eventController.updateEventFromForm(res, eventId, input, sessionStore(req));
+      }),
+    );
+
     // ── Error handler ────────────────────────────────────────────────
 
     this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
