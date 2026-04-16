@@ -8,7 +8,7 @@ import {
   AuthorizationRequired,
 } from "./auth/errors";
 import type { UserRole } from "./auth/User";
-import { IApp, IEventService } from "./contracts";
+import { CreateEventInput, IApp, IEventService } from "./contracts";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -266,6 +266,25 @@ class ExpressApp implements IApp {
 
         await this.eventController.showCreateEventForm(res, sessionStore(req));
       }),
+    );
+
+    this.app.post( 
+      "/events/create",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+        const input: CreateEventInput = {
+          title: typeof req.body.title === "string" ? req.body.title : "",
+          description: typeof req.body.description === "string" ? req.body.description : "",
+          location: typeof req.body.location === "string" ? req.body.location : "",
+          category: typeof req.body.category === "string" ? req.body.category : "",
+          capacity: req.body.capacity ? Number(req.body.capacity) : null,
+          startAt: req.body.startAt ? new Date(req.body.startAt) : new Date(NaN),
+          endAt: req.body.endAt ? new Date(req.body.endAt) : new Date(NaN),
+        };
+        await this.eventController.createEventFromForm(res, input, sessionStore(req));
+      })
     );
 
     // ── Error handler ────────────────────────────────────────────────
