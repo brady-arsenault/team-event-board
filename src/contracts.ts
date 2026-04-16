@@ -61,6 +61,7 @@ export interface IRsvp {
   userId: string; // references IAuthenticatedUser.id from auth infrastructure
   status: RsvpStatus;
   createdAt: Date; // used to determine waitlist ordering (earlier = higher priority)
+  updatedAt: Date;
 }
 
 // Passed by the controller to every service method that needs to know who is acting.
@@ -73,7 +74,10 @@ export interface IActingUser {
 
 // ─── Event Error Types ───────────────────────────────────────────────────────
 
-export type EventNotFoundError = { name: "EventNotFoundError"; message: string };
+export type EventNotFoundError = {
+  name: "EventNotFoundError";
+  message: string;
+};
 export type UnauthorizedError = { name: "UnauthorizedError"; message: string };
 export type InvalidStateError = { name: "InvalidStateError"; message: string };
 export type InvalidInputError = { name: "InvalidInputError"; message: string };
@@ -181,7 +185,7 @@ export interface IRsvpWithEvent {
 
 export interface IUserRsvpDashboard {
   upcoming: IRsvpWithEvent[]; // going/waitlisted, published event in the future — sorted by startAt asc
-  past: IRsvpWithEvent[];     // cancelled rsvp or past/cancelled event — sorted by startAt desc
+  past: IRsvpWithEvent[]; // cancelled rsvp or past/cancelled event — sorted by startAt desc
 }
 
 export type GetUserRsvpsError = UnauthorizedError;
@@ -197,23 +201,48 @@ export type SearchEventsError = InvalidInputError;
 
 export interface IEventService {
   // Feature 1
-  createEvent(input: CreateEventInput, actingUser: IActingUser): Promise<Result<IEvent, CreateEventError>>;
+  createEvent(
+    input: CreateEventInput,
+    actingUser: IActingUser,
+  ): Promise<Result<IEvent, CreateEventError>>;
   // Feature 2
-  getEventById(eventId: string, actingUser: IActingUser): Promise<Result<IEvent, GetEventByIdError>>;
+  getEventById(
+    eventId: string,
+    actingUser: IActingUser,
+  ): Promise<Result<IEvent, GetEventByIdError>>;
   // Feature 3
-  updateEvent(eventId: string, input: UpdateEventInput, actingUser: IActingUser): Promise<Result<IEvent, UpdateEventError>>;
+  updateEvent(
+    eventId: string,
+    input: UpdateEventInput,
+    actingUser: IActingUser,
+  ): Promise<Result<IEvent, UpdateEventError>>;
   // Feature 5
-  publishEvent(eventId: string, actingUser: IActingUser): Promise<Result<IEvent, PublishEventError>>;
-  cancelEvent(eventId: string, actingUser: IActingUser): Promise<Result<IEvent, CancelEventError>>;
+  publishEvent(
+    eventId: string,
+    actingUser: IActingUser,
+  ): Promise<Result<IEvent, PublishEventError>>;
+  cancelEvent(
+    eventId: string,
+    actingUser: IActingUser,
+  ): Promise<Result<IEvent, CancelEventError>>;
   // Feature 6
-  listEvents(filter: ListEventsFilter): Promise<Result<IEvent[], ListEventsError>>;
+  listEvents(
+    filter: ListEventsFilter,
+  ): Promise<Result<IEvent[], ListEventsError>>;
   // Feature 10
-  searchEvents(input: SearchEventsInput): Promise<Result<IEvent[], SearchEventsError>>;
+  searchEvents(
+    input: SearchEventsInput,
+  ): Promise<Result<IEvent[], SearchEventsError>>;
 }
 
 export interface IRsvpService {
   // Feature 4
-  toggleRsvp(eventId: string, actingUser: IActingUser): Promise<Result<IRsvp, ToggleRsvpError>>;
+  toggleRsvp(
+    eventId: string,
+    actingUser: IActingUser,
+  ): Promise<Result<IRsvp, ToggleRsvpError>>;
   // Feature 7
-  getUserRsvps(actingUser: IActingUser): Promise<Result<IUserRsvpDashboard, GetUserRsvpsError>>;
+  getUserRsvps(
+    actingUser: IActingUser,
+  ): Promise<Result<IUserRsvpDashboard, GetUserRsvpsError>>;
 }

@@ -20,6 +20,7 @@ class InMemoryEventRepository implements IEventRepository {
     const index = this.events.findIndex((e) => e.id === id);
     if (index === -1) return null;
     Object.assign(this.events[index], changes);
+    this.events[index].updatedAt = new Date();
     return this.events[index];
   }
 }
