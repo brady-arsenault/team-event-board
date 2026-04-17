@@ -273,6 +273,8 @@ class ExpressApp implements IApp {
       }),
     );
 
+    // ── Feature 1: Event Creation (Brady) ──────────────────────
+
     this.app.get(
       "/events/create",
       asyncHandler(async (req, res) => {
@@ -304,6 +306,21 @@ class ExpressApp implements IApp {
         await this.eventController.createEventFromForm(res, input, sessionStore(req));
       }),
     );
+
+    // ── Feature 2: Event Detail Page (Gautham) ──────────────────────
+    this.app.get(
+      "/events/:id/detail",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.eventController.eventDetailFromForm(res, eventId, sessionStore(req), this.isHtmxRequest(req));
+      }),
+    );
+
+    // ── Feature 3: Event Edit (Brady) ──────────────────────
 
     this.app.get(
       "/events/edit/:id",
