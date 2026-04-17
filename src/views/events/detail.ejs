@@ -59,14 +59,22 @@
         &larr; Back to Events
       </a>
 
-      <% if (session.authenticatedUser && session.authenticatedUser.userId === event.organizerId) { %>
-        <a
-          href="/events/edit/<%= event.id %>"
-          class="inline-flex items-center px-4 py-2 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
-        >
-          Edit Event
-        </a>
-      <% } %>
+      <div class="flex items-center gap-3">
+        <div id="rsvp-widget"
+          hx-get="/events/<%= event.id %>/rsvp"
+          hx-trigger="load"
+          hx-swap="outerHTML"
+        ></div>
+
+        <% if (session.authenticatedUser && session.authenticatedUser.userId === event.organizerId) { %>
+          <a
+            href="/events/edit/<%= event.id %>"
+            class="inline-flex items-center px-4 py-2 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+          >
+            Edit Event
+          </a>
+        <% } %>
+      </div>
     </div>
   </div>
 </section>
