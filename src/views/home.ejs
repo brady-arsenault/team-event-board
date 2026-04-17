@@ -1,66 +1,155 @@
 <section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
-  <h1 class="text-3xl font-bold text-slate-900 mb-3">Welcome to Project Starter</h1>
-  <p class="text-slate-500">
-    You are signed in and ready to build. This placeholder page is where your
-    project's main content will go.
-  </p>
-  <% if (session.authenticatedUser) { %>
-    <p class="text-slate-500 mt-2 mb-0">
-      Signed in as <strong class="text-slate-700"><%= session.authenticatedUser.displayName %></strong>
-      (<%= session.authenticatedUser.email %>, role:
-      <strong class="text-slate-700"><%= session.authenticatedUser.role %></strong>).
-    </p>
-  <% } %>
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900 mb-3">Campus Events</h1>
+      <p class="text-slate-500">
+        Browse upcoming published events and narrow the list with filters.
+      </p>
+
+      <% if (session.authenticatedUser) { %>
+        <p class="text-slate-500 mt-2 mb-0">
+          Signed in as
+          <strong class="text-slate-700"><%= session.authenticatedUser.displayName %></strong>
+          (<%= session.authenticatedUser.email %>, role:
+          <strong class="text-slate-700"><%= session.authenticatedUser.role %></strong>).
+        </p>
+      <% } %>
+    </div>
+
+    <div class="shrink-0">
+      <a
+        href="/events/create"
+        class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"
+      >
+        Create Event
+      </a>
+    </div>
+  </div>
 </section>
 
 <% if (pageError) { %>
   <%- include("partials/error", { message: pageError }) %>
 <% } %>
 
-<section class="max-w-3xl p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
-  <div class="mb-4">
-    <h2 class="text-xl font-semibold mb-2">Getting Started</h2>
-    <p class="text-slate-500">
-      This starter application provides authentication and role-based authorization
-      out of the box. Here are some ideas for where to begin:
+<section class="max-w-5xl p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-5">
+  <div class="mb-3">
+    <h2 class="text-xl font-semibold text-slate-900">Filter Events</h2>
+    <p class="text-slate-500 mt-1">
+      Use category and timeframe filters to narrow the event list.
     </p>
   </div>
 
-  <ul class="list-disc pl-5 space-y-2 text-slate-700">
-    <li>Replace this page with your project's main dashboard or landing page.</li>
-    <li>Add new routes in <code class="bg-slate-100 px-1 rounded text-sm">src/app.ts</code> and protect them with
-      <code class="bg-slate-100 px-1 rounded text-sm">requireAuthenticated</code> or <code class="bg-slate-100 px-1 rounded text-sm">requireRole</code>.</li>
-    <li>Create new EJS views in <code class="bg-slate-100 px-1 rounded text-sm">src/views/</code>.</li>
-    <li>Add your own models, services, and controllers under <code class="bg-slate-100 px-1 rounded text-sm">src/</code>.</li>
-    <li>Use the Prisma schema in <code class="bg-slate-100 px-1 rounded text-sm">prisma/schema.prisma</code> to define your database tables.</li>
-  </ul>
+  <form action="/home" method="GET" class="grid gap-4 md:grid-cols-3">
+    <div>
+      <label for="category" class="block text-sm font-medium text-slate-700 mb-2">
+        Category
+      </label>
+      <select
+        id="category"
+        name="category"
+        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700"
+      >
+        <option value="">All categories</option>
+        <option value="social" <%= typeof filters !== "undefined" && filters.category === "social" ? "selected" : "" %>>Social</option>
+        <option value="educational" <%= typeof filters !== "undefined" && filters.category === "educational" ? "selected" : "" %>>Educational</option>
+        <option value="volunteer" <%= typeof filters !== "undefined" && filters.category === "volunteer" ? "selected" : "" %>>Volunteer</option>
+        <option value="sports" <%= typeof filters !== "undefined" && filters.category === "sports" ? "selected" : "" %>>Sports</option>
+        <option value="arts" <%= typeof filters !== "undefined" && filters.category === "arts" ? "selected" : "" %>>Arts</option>
+        <option value="other" <%= typeof filters !== "undefined" && filters.category === "other" ? "selected" : "" %>>Other</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="timeframe" class="block text-sm font-medium text-slate-700 mb-2">
+        Timeframe
+      </label>
+      <select
+        id="timeframe"
+        name="timeframe"
+        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700"
+      >
+        <option value="">All upcoming</option>
+        <option value="upcoming" <%= typeof filters !== "undefined" && filters.timeframe === "upcoming" ? "selected" : "" %>>Upcoming</option>
+        <option value="this-week" <%= typeof filters !== "undefined" && filters.timeframe === "this-week" ? "selected" : "" %>>This week</option>
+        <option value="this-weekend" <%= typeof filters !== "undefined" && filters.timeframe === "this-weekend" ? "selected" : "" %>>This weekend</option>
+      </select>
+    </div>
+
+    <div class="flex items-end gap-3">
+      <button
+        type="submit"
+        class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"
+      >
+        Apply Filters
+      </button>
+
+      <a
+        href="/home"
+        class="inline-flex items-center px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50"
+      >
+        Clear
+      </a>
+    </div>
+  </form>
 </section>
 
-<section class="max-w-3xl mt-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg" x-data="{ open: false }">
-  <button
-    @click="open = !open"
-    class="w-full flex items-center justify-between text-left bg-transparent border-0 p-0 cursor-pointer"
-  >
-    <h2 class="text-xl font-semibold">Alpine.js Demo</h2>
-    <span class="text-slate-400 text-sm" x-text="open ? 'Hide' : 'Show'">Show</span>
-  </button>
-
-  <div x-show="open" x-transition class="mt-4">
-    <p class="text-slate-500 mb-3">
-      Alpine.js is included via CDN and ready to use. This collapsible section is
-      a quick demonstration. Use <code class="bg-slate-100 px-1 rounded text-sm">x-data</code>,
-      <code class="bg-slate-100 px-1 rounded text-sm">x-show</code>,
-      <code class="bg-slate-100 px-1 rounded text-sm">@click</code>, and other
-      Alpine directives directly in your EJS templates.
+<section class="max-w-5xl p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+  <div class="mb-3">
+    <h2 class="text-xl font-semibold text-slate-900">Upcoming Events</h2>
+    <p class="text-slate-500 mt-1">
+      Matching published events are shown below.
     </p>
-    <div x-data="{ count: 0 }" class="flex items-center gap-3">
-      <button
-        @click="count++"
-        class="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium cursor-pointer hover:bg-blue-700 text-sm"
-      >
-        Clicked: <span x-text="count">0</span>
-      </button>
-      <span class="text-sm text-slate-500">A simple Alpine.js counter</span>
-    </div>
   </div>
+
+  <% if (!events || events.length === 0) { %>
+    <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6">
+      <p class="text-sm text-slate-500">
+        No events match the current filters.
+      </p>
+    </div>
+  <% } else { %>
+    <div class="grid gap-4">
+      <% events.forEach((event) => { %>
+        <article class="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-lg font-semibold text-slate-900"><%= event.title %></h3>
+              <p class="text-sm text-slate-500 mt-1">
+                <span class="font-medium text-slate-700"><%= event.category %></span>
+                ·
+                <span><%= event.location %></span>
+              </p>
+            </div>
+
+            <span class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600 border border-slate-200">
+              <%= event.status %>
+            </span>
+          </div>
+
+          <p class="text-slate-600 mt-3"><%= event.description %></p>
+
+          <div class="mt-4 grid gap-2 text-sm text-slate-600">
+            <p>
+              <span class="font-medium text-slate-700">Starts:</span>
+              <%= event.startAt.toLocaleString() %>
+            </p>
+            <p>
+              <span class="font-medium text-slate-700">Ends:</span>
+              <%= event.endAt.toLocaleString() %>
+            </p>
+            <p>
+              <span class="font-medium text-slate-700">Organizer:</span>
+              <%= event.organizerId %>
+            </p>
+            <% if (event.capacity !== null) { %>
+              <p>
+                <span class="font-medium text-slate-700">Capacity:</span>
+                <%= event.capacity %>
+              </p>
+            <% } %>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  <% } %>
 </section>
