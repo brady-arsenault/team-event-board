@@ -78,6 +78,17 @@
             </form>
           <% } %>
 
+          <% if (event.status === "published") { %>
+            <form action="/events/<%= event.id %>/cancel" method="post">
+              <button
+                type="submit"
+                class="inline-flex items-center px-4 py-2 rounded-2xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700"
+              >
+                Cancel Event
+              </button>
+            </form>
+          <% } %>
+
           <a
             href="/events/edit/<%= event.id %>"
             class="inline-flex items-center px-4 py-2 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
