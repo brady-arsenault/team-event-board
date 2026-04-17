@@ -30,6 +30,12 @@ export interface IEventController {
     filter: ListEventsFilter,
     store: AppSessionStore,
   ): Promise<void>;
+ eventDetailFromForm(
+    res: Response,
+    eventId: string,
+    store: AppSessionStore,
+    isHtmx: boolean,
+  ): Prommise<void>;
 }
 
 class EventController implements IEventController {
@@ -234,7 +240,54 @@ class EventController implements IEventController {
       },
     });
   }
+  
+  async eventDetailFromForm(
+      res: Response,
+      eventId: string,
+      store: AppSessionStore,
+      isHtmx: boolean,
+    ): Promise<void> {
+      const session = touchAppSession(store);
+      const currentUser = getAuthenticatedUser(store);
+
+      if (!currentUser) {
+        res.status(401).render("partials/error", {
+          message: "Please log in to continue.",
+          layout: false,
+        });
+        return;
+      }
+
+      const result = await this.service.getEventById(eventId, {
+        userId: currentUser.userId,
+        role: currentUser.role,
+        displayName: currentUser.displayName,
+      });
+
+      if (result.ok === false) {
+        const status = result.value.name === "EventNotFoundError" ? 404 : 403;
+        const log = status >= 500 ? this.logger.error : this.logger.warn;
+        log.call(this.logger, `Show event detail failed: ${result.value.message}`);
+        res.status(status).render("partials/error", {
+          message: result.value.message,
+          layout: false,
+        });
+        return;
+      }
+
+      const event = result.value;
+
+      res.render("events/detail", {
+        session,
+        event,
+        pageError: null,
+        layout: isHtmx ? false : undefined, // if HTMX request, render without layout
+      });
+    }
+  
 }
+
+  
 
 export function CreateEventController(
   service: IEventService,
