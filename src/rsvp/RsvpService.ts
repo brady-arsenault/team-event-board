@@ -1,4 +1,5 @@
 import type {
+  GetEventRsvpError,
   GetUserRsvpsError,
   IActingUser,
   IEventRepository,
@@ -9,7 +10,7 @@ import type {
   IUserRsvpDashboard,
   ToggleRsvpError,
 } from "../contracts";
-import { UnauthorizedError } from "../contracts";
+import { EventNotFoundError, InvalidStateError, UnauthorizedError } from "../contracts";
 import { Err, Ok, Result } from "../lib/result";
 import type { ILoggingService } from "../service/LoggingService";
 
@@ -22,10 +23,69 @@ class RsvpService implements IRsvpService {
 
   // Feature 4 — owned by Gautham
   async toggleRsvp(
-    _eventId: string,
-    _actingUser: IActingUser,
+    eventId: string,
+    actingUser: IActingUser,
   ): Promise<Result<IRsvp, ToggleRsvpError>> {
-    throw new Error("Method not implemented.");
+    const event = await this.eventRepository.findById(eventId);
+
+    if (event === null) {
+      return Err(EventNotFoundError("Event not found."));
+    }
+
+    const now = new Date();
+    if (event.status === "cancelled" || event.status === "past" || event.startAt < now) {
+      return Err(InvalidStateError("Event is cancelled or no longer accepting RSVPs."));
+    }
+
+    const existingRsvp = await this.rsvpRepository.findByEventAndUser(
+      eventId,
+      actingUser.userId,
+    );
+
+    if (existingRsvp) {
+      const isActive = existingRsvp.status === "going" || existingRsvp.status === "waitlisted";
+
+      if (isActive) {
+        const updatedRsvp = await this.rsvpRepository.update(existingRsvp.id, {
+          status: "cancelled",
+          updatedAt: now,
+        });
+        return Ok(updatedRsvp!);
+      } else {
+        const goingCount = await this.rsvpRepository.countGoingByEvent(eventId);
+        const isFull = event.capacity !== null && goingCount >= event.capacity;
+        const updatedRsvp = await this.rsvpRepository.update(existingRsvp.id, {
+          status: isFull ? "waitlisted" : "going",
+          updatedAt: now,
+        });
+        return Ok(updatedRsvp!);
+      }
+    } else {
+      const goingCount = await this.rsvpRepository.countGoingByEvent(eventId);
+      const isFull = event.capacity !== null && goingCount >= event.capacity;
+      const newRsvp: IRsvp = {
+        id: crypto.randomUUID(),
+        eventId,
+        userId: actingUser.userId,
+        status: isFull ? "waitlisted" : "going",
+        createdAt: now,
+        updatedAt: now,
+      };
+      const createdRsvp = await this.rsvpRepository.create(newRsvp);
+      return Ok(createdRsvp);
+    }
+  }
+
+  async getEventRsvp(
+    eventId: string,
+    actingUser: IActingUser,
+  ): Promise<Result<IRsvp | null, GetEventRsvpError>> {
+    const event = await this.eventRepository.findById(eventId);
+    if (event === null) {
+      return Err(EventNotFoundError("Event not found."));
+    }
+    const rsvp = await this.rsvpRepository.findByEventAndUser(eventId, actingUser.userId);
+    return Ok(rsvp);
   }
 
   // Feature 7 — My RSVPs Dashboard (Phan Ha)

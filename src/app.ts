@@ -365,6 +365,26 @@ class ExpressApp implements IApp {
       }),
     );
 
+    // ── Feature 4: RSVP Toggle (Gautham) ────────────────────────────
+
+    this.app.get(
+      "/events/:id/rsvp",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.rsvpController.showRsvpButton(res, eventId, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/:id/rsvp",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.rsvpController.handleToggleRsvp(res, eventId, sessionStore(req));
+      }),
+    );
+        
     this.app.post( //added publish method to app
       "/events/:id/publish",
       asyncHandler(async (req, res) => {
