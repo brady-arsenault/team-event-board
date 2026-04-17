@@ -66,29 +66,33 @@
           hx-swap="outerHTML"
         ></div>
 
-        <% if (session.authenticatedUser && session.authenticatedUser.userId === event.organizerId) { %>
-          <% if (event.status === "draft") { %>
-            <form action="/events/<%= event.id %>/publish" method="post">
-              <button
-                type="submit"
-                class="inline-flex items-center px-4 py-2 rounded-2xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700"
-              >
-                Publish Event
-              </button>
-            </form>
-          <% } %>
+        <% const currentUser = session.authenticatedUser; %>
+        <% const isOrganizer = currentUser && currentUser.userId === event.organizerId; %>
+        <% const isAdmin = currentUser && currentUser.role === "admin"; %>
 
-          <% if (event.status === "published") { %>
-            <form action="/events/<%= event.id %>/cancel" method="post">
-              <button
-                type="submit"
-                class="inline-flex items-center px-4 py-2 rounded-2xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700"
-              >
-                Cancel Event
-              </button>
-            </form>
-          <% } %>
+        <% if (isOrganizer && event.status === "draft") { %>
+          <form action="/events/<%= event.id %>/publish" method="post">
+            <button
+              type="submit"
+              class="inline-flex items-center px-4 py-2 rounded-2xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700"
+            >
+              Publish Event
+            </button>
+          </form>
+        <% } %>
 
+        <% if ((isOrganizer || isAdmin) && event.status === "published") { %>
+          <form action="/events/<%= event.id %>/cancel" method="post">
+            <button
+              type="submit"
+              class="inline-flex items-center px-4 py-2 rounded-2xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700"
+            >
+              Cancel Event
+            </button>
+          </form>
+        <% } %>
+
+        <% if (isOrganizer) { %>
           <a
             href="/events/edit/<%= event.id %>"
             class="inline-flex items-center px-4 py-2 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
