@@ -50,7 +50,7 @@ export interface IEventController {
     eventId: string,
     store: AppSessionStore,
     isHtmx: boolean,
-  ): Prommise<void>;
+  ): Promise<void>;
 }
 
 class EventController implements IEventController {
