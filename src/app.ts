@@ -365,6 +365,30 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.post( //added publish method to app
+      "/events/:id/publish",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.eventController.publishEventFromForm(res, eventId, sessionStore(req));
+      }),
+    );
+
+    this.app.post( //added cancel method to app
+      "/events/:id/cancel",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.eventController.cancelEventFromForm(res, eventId, sessionStore(req));
+      }),
+    );
+
     // ── Feature 7: My RSVPs Dashboard (Phan Ha) ──────────────────────
 
     this.app.get(

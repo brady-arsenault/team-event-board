@@ -1,6 +1,11 @@
 import type { Response } from "express";
 import type { ILoggingService } from "./service/LoggingService";
-import type { IEventService, CreateEventInput, UpdateEventInput, ListEventsFilter } from "./contracts";
+import type {
+  IEventService,
+  CreateEventInput,
+  UpdateEventInput,
+  ListEventsFilter,
+} from "./contracts";
 import {
   getAuthenticatedUser,
   touchAppSession,
@@ -23,6 +28,16 @@ export interface IEventController {
     res: Response,
     eventId: string,
     input: UpdateEventInput,
+    store: AppSessionStore,
+  ): Promise<void>;
+  publishEventFromForm(
+    res: Response,
+    eventId: string,
+    store: AppSessionStore,
+  ): Promise<void>;
+  cancelEventFromForm(
+    res: Response,
+    eventId: string,
     store: AppSessionStore,
   ): Promise<void>;
   showHome(
@@ -195,6 +210,90 @@ class EventController implements IEventController {
     }
 
     this.logger.info(`Updated event ${result.value.id}`);
+    res.redirect("/home");
+  }
+
+  async publishEventFromForm(//added publish method to controller
+    res: Response,
+    eventId: string,
+    store: AppSessionStore,
+  ): Promise<void> {
+    const currentUser = getAuthenticatedUser(store);
+
+    if (!currentUser) {
+      res.status(401).render("partials/error", {
+        message: "Please log in to continue.",
+        layout: false,
+      });
+      return;
+    }
+
+    const result = await this.service.publishEvent(eventId, {
+      userId: currentUser.userId,
+      role: currentUser.role,
+      displayName: currentUser.displayName,
+    });
+
+    if (result.ok === false) {
+      let status = 400;
+      if (result.value.name === "EventNotFoundError") {
+        status = 404;
+      } else if (result.value.name === "UnauthorizedError") {
+        status = 403;
+      }
+
+      const log = status >= 500 ? this.logger.error : this.logger.warn;
+      log.call(this.logger, `Publish event failed: ${result.value.message}`);
+      res.status(status).render("partials/error", {
+        message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    this.logger.info(`Published event ${result.value.id}`);
+    res.redirect("/home");
+  }
+
+  async cancelEventFromForm(//added cancel method to controller
+    res: Response,
+    eventId: string,
+    store: AppSessionStore,
+  ): Promise<void> {
+    const currentUser = getAuthenticatedUser(store);
+
+    if (!currentUser) {
+      res.status(401).render("partials/error", {
+        message: "Please log in to continue.",
+        layout: false,
+      });
+      return;
+    }
+
+    const result = await this.service.cancelEvent(eventId, {
+      userId: currentUser.userId,
+      role: currentUser.role,
+      displayName: currentUser.displayName,
+    });
+
+    if (result.ok === false) {
+      let status = 400;
+      if (result.value.name === "EventNotFoundError") {
+        status = 404;
+      } else if (result.value.name === "UnauthorizedError") {
+        status = 403;
+      }
+
+      const log = status >= 500 ? this.logger.error : this.logger.warn;
+      log.call(this.logger, `Cancel event failed: ${result.value.message}`);
+      res.status(status).render("partials/error", {
+        message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    this.logger.info(`Cancelled event ${result.value.id}`);
     res.redirect("/home");
   }
 
