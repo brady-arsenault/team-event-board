@@ -8,7 +8,7 @@ import {
   AuthorizationRequired,
 } from "./auth/errors";
 import type { UserRole } from "./auth/User";
-import { IApp } from "./contracts";
+import { CreateEventInput, IApp, IEventService, ListEventsFilter } from "./contracts";
 import {
   getAuthenticatedUser,
   isAuthenticatedSession,
@@ -17,6 +17,9 @@ import {
   touchAppSession,
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
+import type { IEventController } from "./controller";
+import { IRsvpController } from "./rsvp/RsvpController";
+import { IEventSearchController } from "./events/EventSearchController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -36,6 +39,10 @@ class ExpressApp implements IApp {
   constructor(
     private readonly authController: IAuthController,
     private readonly logger: ILoggingService,
+    private readonly eventController: IEventController,
+    private readonly eventService: IEventService,
+    private readonly rsvpController: IRsvpController,
+    private readonly eventSearchController: IEventSearchController,
   ) {
     this.app = express();
     this.registerMiddleware();
@@ -238,7 +245,6 @@ class ExpressApp implements IApp {
     );
 
     // ── Authenticated home page ──────────────────────────────────────
-    // TODO: Replace this placeholder with your project's main page.
 
     this.app.get(
       "/home",
@@ -249,7 +255,183 @@ class ExpressApp implements IApp {
 
         const browserSession = recordPageView(sessionStore(req));
         this.logger.info(`GET /home for ${browserSession.browserLabel}`);
-        res.render("home", { session: browserSession, pageError: null });
+
+        await this.eventController.showHome(
+          res,
+          {
+            category:
+              typeof req.query.category === "string"
+                ? (req.query.category as ListEventsFilter["category"])
+                : undefined,
+            timeframe:
+              typeof req.query.timeframe === "string"
+                ? (req.query.timeframe as ListEventsFilter["timeframe"])
+                : undefined,
+          },
+          sessionStore(req),
+        );
+      }),
+    );
+
+    // ── Feature 1: Event Creation (Brady) ──────────────────────
+
+    this.app.get(
+      "/events/create",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        await this.eventController.showCreateEventForm(res, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/create",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const input: CreateEventInput = {
+          title: typeof req.body.title === "string" ? req.body.title : "",
+          description: typeof req.body.description === "string" ? req.body.description : "",
+          location: typeof req.body.location === "string" ? req.body.location : "",
+          category: typeof req.body.category === "string" ? req.body.category : "",
+          capacity: req.body.capacity ? Number(req.body.capacity) : null,
+          startAt: req.body.startAt ? new Date(req.body.startAt) : new Date(NaN),
+          endAt: req.body.endAt ? new Date(req.body.endAt) : new Date(NaN),
+        };
+
+        await this.eventController.createEventFromForm(res, input, sessionStore(req));
+      }),
+    );
+
+    // ── Feature 2: Event Detail Page (Gautham) ──────────────────────
+    this.app.get(
+      "/events/:id/detail",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.eventController.eventDetailFromForm(res, eventId, sessionStore(req), this.isHtmxRequest(req));
+      }),
+    );
+
+    // ── Feature 3: Event Edit (Brady) ──────────────────────
+
+    this.app.get(
+      "/events/edit/:id",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.eventController.showEditEventForm(res, eventId, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/edit/:id",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        const input = {
+          title: typeof req.body.title === "string" ? req.body.title : undefined,
+          description: typeof req.body.description === "string" ? req.body.description : undefined,
+          location: typeof req.body.location === "string" ? req.body.location : undefined,
+          category: typeof req.body.category === "string" ? req.body.category : undefined,
+          capacity:
+            req.body.capacity === "" || req.body.capacity === undefined
+              ? undefined
+              : Number(req.body.capacity),
+          startAt:
+            typeof req.body.startAt === "string" && req.body.startAt
+              ? new Date(req.body.startAt)
+              : undefined,
+          endAt:
+            typeof req.body.endAt === "string" && req.body.endAt
+              ? new Date(req.body.endAt)
+              : undefined,
+        };
+
+        await this.eventController.updateEventFromForm(res, eventId, input, sessionStore(req));
+      }),
+    );
+
+    // ── Feature 4: RSVP Toggle (Gautham) ────────────────────────────
+
+    this.app.get(
+      "/events/:id/rsvp",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.rsvpController.showRsvpButton(res, eventId, sessionStore(req));
+      }),
+    );
+
+    this.app.post(
+      "/events/:id/rsvp",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.rsvpController.handleToggleRsvp(res, eventId, sessionStore(req));
+      }),
+    );
+        
+    this.app.post( //added publish method to app
+      "/events/:id/publish",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.eventController.publishEventFromForm(res, eventId, sessionStore(req));
+      }),
+    );
+
+    this.app.post( //added cancel method to app
+      "/events/:id/cancel",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.eventController.cancelEventFromForm(res, eventId, sessionStore(req));
+      }),
+    );
+
+    // ── Feature 7: My RSVPs Dashboard (Phan Ha) ──────────────────────
+
+    this.app.get(
+      "/my-rsvps",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.rsvpController.showDashboard(res, sessionStore(req));
+      }),
+    );
+
+    // ── Feature 10: Event Search (Phan Ha) ────────────────────────────
+
+    this.app.get(
+      "/events/search",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        const query = typeof req.query.q === "string" ? req.query.q : "";
+        await this.eventSearchController.showSearch(
+          res,
+          sessionStore(req),
+          query,
+          this.isHtmxRequest(req),
+        );
       }),
     );
 
@@ -273,6 +455,17 @@ class ExpressApp implements IApp {
 export function CreateApp(
   authController: IAuthController,
   logger: ILoggingService,
+  eventController: IEventController,
+  eventService: IEventService,
+  rsvpController: IRsvpController,
+  eventSearchController: IEventSearchController,
 ): IApp {
-  return new ExpressApp(authController, logger);
+  return new ExpressApp(
+    authController,
+    logger,
+    eventController,
+    eventService,
+    rsvpController,
+    eventSearchController,
+  );
 }

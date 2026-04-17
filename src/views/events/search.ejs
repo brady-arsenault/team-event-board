@@ -1,0 +1,47 @@
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
+  <h1 class="text-3xl font-bold text-slate-900 mb-2">Search Events</h1>
+  <p class="text-slate-500 m-0">
+    Find published upcoming events by title, description, or location.
+  </p>
+</section>
+
+<% if (pageError) { %>
+  <%- include("../partials/error", { message: pageError }) %>
+<% } %>
+
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+  <form
+    action="/events/search"
+    method="get"
+    hx-get="/events/search"
+    hx-target="#search-results"
+    hx-swap="innerHTML"
+    hx-trigger="submit, keyup changed delay:300ms from:input[name='q']"
+    class="flex gap-3 flex-wrap items-end"
+  >
+    <div class="flex-1 min-w-60">
+      <label for="q" class="block text-sm font-medium text-slate-700 mb-2">
+        Keyword
+      </label>
+      <input
+        id="q"
+        name="q"
+        type="search"
+        value="<%= query %>"
+        maxlength="500"
+        placeholder="e.g. hackathon, library, volunteer"
+        class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
+      />
+    </div>
+    <button
+      type="submit"
+      class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+    >
+      Search
+    </button>
+  </form>
+</section>
+
+<section id="search-results" class="mb-5">
+  <%- include("partials/search-results", { events: events, query: query }) %>
+</section>
