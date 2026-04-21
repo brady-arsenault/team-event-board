@@ -100,7 +100,8 @@ describe("Event Creation", () => {
   });
 
   it("should error for an unauthenticated user", async () => {
-   // Step 1: Create an event
+    await agent.post("/logout").send(); // Ensure we start with a clean session
+    // Step 1: Create an event
     const eventData = {
       title: "Test Event",
       description: "This is a test event",
