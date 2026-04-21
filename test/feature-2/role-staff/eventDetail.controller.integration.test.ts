@@ -1,11 +1,11 @@
 import type { Response } from "express";
-import { CreateEventController } from "../../src/controller";
-import { CreateEventService } from "../../src/service";
-import { CreateInMemoryEventRepository } from "../../src/repository/InMemoryEventRepository";
+import { CreateEventController } from "../../../src/controller";
+import { CreateEventService } from "../../../src/service";
+import { CreateInMemoryEventRepository } from "../../../src/repository/InMemoryEventRepository";
 import {
   signInAuthenticatedUser,
   type AppSessionStore,
-} from "../../src/session/AppSession";
+} from "../../../src/session/AppSession";
 import { silentLogger } from "./helpers/buildTestApp";
 import { makeEvent, USER_IDS } from "./helpers/fixtures";
 
@@ -20,7 +20,10 @@ describe("EventController.eventDetailFromForm — staff role (integration)", () 
   function makeMockResponse() {
     const res = {
       statusCode: 200,
-      status: jest.fn().mockImplementation(function (this: typeof res, code: number) {
+      status: jest.fn().mockImplementation(function (
+        this: typeof res,
+        code: number,
+      ) {
         this.statusCode = code;
         return this;
       }),
