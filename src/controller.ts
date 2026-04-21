@@ -159,6 +159,8 @@ class EventController implements IEventController {
       res.status(status).render("home", {
         session,
         pageError: result.value.message,
+        events: [],
+        filters: {},
       });
       return;
     }
