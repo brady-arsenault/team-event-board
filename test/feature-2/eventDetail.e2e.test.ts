@@ -1,5 +1,4 @@
 import request from "supertest";
-import type { TestAgent } from "supertest";
 import { buildTestApp } from "./helpers/buildTestApp";
 import {
   DEMO_PASSWORD,
@@ -16,7 +15,7 @@ import type { IEvent, IEventRepository } from "../../src/contracts";
  * GET /events/:id/detail and inspect the rendered HTML.
  */
 describe("GET /events/:id/detail — user role (e2e)", () => {
-  let agent: TestAgent;
+  let agent: ReturnType<typeof request.agent>;
   let eventRepository: IEventRepository;
   let expressApp: ReturnType<
     ReturnType<typeof buildTestApp>["app"]["getExpressApp"]
