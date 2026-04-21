@@ -1,5 +1,5 @@
-import { CreateEventService } from "../../src/service";
-import type { IEventRepository } from "../../src/contracts";
+import { CreateEventService } from "../../../src/service";
+import type { IEventRepository } from "../../../src/contracts";
 import { silentLogger } from "./helpers/buildTestApp";
 import { makeActingUser, makeEvent, USER_IDS } from "./helpers/fixtures";
 

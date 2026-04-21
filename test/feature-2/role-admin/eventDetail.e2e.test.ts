@@ -6,7 +6,7 @@ import {
   USER_IDS,
   makeEvent,
 } from "./helpers/fixtures";
-import type { IEvent, IEventRepository } from "../../src/contracts";
+import type { IEvent, IEventRepository } from "../../../src/contracts";
 
 /**
  * End-to-end tests for Feature 2 from the perspective of the "admin" role.
