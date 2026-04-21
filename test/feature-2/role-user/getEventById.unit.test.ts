@@ -1,5 +1,5 @@
-import { CreateEventService } from "../../src/service";
-import type { IEventRepository } from "../../src/contracts";
+import { CreateEventService } from "../../../src/service";
+import type { IEventRepository } from "../../../src/contracts";
 import { silentLogger } from "./helpers/buildTestApp";
 import { makeActingUser, makeEvent, USER_IDS } from "./helpers/fixtures";
 
@@ -30,7 +30,10 @@ describe("EventService.getEventById — user role (unit)", () => {
   describe("published events", () => {
     it("returns the event for an authenticated member (user role)", async () => {
       const repo = makeRepoMock();
-      const event = makeEvent({ status: "published", organizerId: USER_IDS.staff });
+      const event = makeEvent({
+        status: "published",
+        organizerId: USER_IDS.staff,
+      });
       repo.findById.mockResolvedValue(event);
 
       const service = CreateEventService(repo, silentLogger());
