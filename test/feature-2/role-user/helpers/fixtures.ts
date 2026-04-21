@@ -3,7 +3,7 @@ import type {
   EventStatus,
   IActingUser,
   IEvent,
-} from "../../../src/contracts";
+} from "../../../../src/contracts";
 
 export const USER_IDS = {
   admin: "user-admin",
