@@ -248,6 +248,32 @@ class EventController implements IEventController {
 
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Publish event failed: ${result.value.message}`);
+
+      if (isHtmx) {
+        const session = touchAppSession(store);
+        const eventResult = await this.service.getEventById(eventId, {
+          userId: currentUser.userId,
+          role: currentUser.role,
+          displayName: currentUser.displayName,
+        });
+
+        if (eventResult.ok === false) {
+          res.status(status).render("partials/error", {
+            message: result.value.message,
+            layout: false,
+          });
+          return;
+        }
+
+        res.status(status).render("events/detail", {
+          session,
+          event: eventResult.value,
+          pageError: result.value.message,
+          layout: false,
+        });
+        return;
+      }
+
       res.status(status).render("partials/error", {
         message: result.value.message,
         layout: false,
@@ -317,6 +343,32 @@ class EventController implements IEventController {
 
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Cancel event failed: ${result.value.message}`);
+
+      if (isHtmx) {
+        const session = touchAppSession(store);
+        const eventResult = await this.service.getEventById(eventId, {
+          userId: currentUser.userId,
+          role: currentUser.role,
+          displayName: currentUser.displayName,
+        });
+
+        if (eventResult.ok === false) {
+          res.status(status).render("partials/error", {
+            message: result.value.message,
+            layout: false,
+          });
+          return;
+        }
+
+        res.status(status).render("events/detail", {
+          session,
+          event: eventResult.value,
+          pageError: result.value.message,
+          layout: false,
+        });
+        return;
+      }
+
       res.status(status).render("partials/error", {
         message: result.value.message,
         layout: false,
