@@ -73,7 +73,7 @@ class EventController implements IEventController {
 
     res.render("events/create", {
       session,
-      pageError: null,
+      message: null,
     });
   }
 
@@ -153,18 +153,19 @@ class EventController implements IEventController {
     });
 
     if (result.ok === false) {
-      const status = result.value.name === "InvalidInputError" ? 400 : 403;
+      const status = result.value.name === "InvalidInputError" ? 200 : 403;
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Create event failed: ${result.value.message}`);
-      res.status(status).render("home", {
-        session,
-        pageError: result.value.message,
+      res.status(status).render("partials/error", {
+        message: result.value.message,
+        layout: false,
       });
       return;
     }
 
     this.logger.info(`Created event ${result.value.id}`);
-    res.redirect("/home");
+    res.setHeader('HX-Redirect', '/home');
+    res.status(200).send();
   }
 
   async updateEventFromForm(
