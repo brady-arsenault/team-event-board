@@ -1,4 +1,3 @@
-import type express from "express";
 import type {
   IApp,
   IEventRepository,
@@ -22,7 +21,6 @@ import {
 } from "../../../src/rsvp/RsvpController";
 import { CreateRsvpService } from "../../../src/rsvp/RsvpService";
 import { CreateEventService } from "../../../src/service";
-import type { AppSessionStore } from "../../../src/session/AppSession";
 
 export interface TestHarness {
   app: IApp;
@@ -40,10 +38,9 @@ export function silentLogger(): ILoggingService {
 }
 
 /**
- * Builds a composed Express app and additionally wires the RSVP toggle
- * routes (`GET`/`POST /events/:id/rsvp`) that the RSVP button view posts to.
- * The routes are not registered by the production `CreateApp` yet, so we add
- * them here in the test harness to exercise the full HTTP stack end-to-end.
+ * Builds a composed Express app using the same wiring as `createComposedApp`,
+ * but returns the underlying repositories so tests can seed events and inspect
+ * RSVP state directly.
  */
 export function buildTestApp(): TestHarness {
   const logger = silentLogger();
@@ -85,38 +82,5 @@ export function buildTestApp(): TestHarness {
     eventSearchController,
   );
 
-  wireRsvpRoutes(app.getExpressApp(), rsvpController);
-
   return { app, eventRepository, rsvpRepository, rsvpController };
-}
-
-function wireRsvpRoutes(
-  expressApp: express.Express,
-  rsvpController: IRsvpController,
-): void {
-  expressApp.get("/events/:id/rsvp", async (req, res, next) => {
-    try {
-      const eventId = typeof req.params.id === "string" ? req.params.id : "";
-      await rsvpController.showRsvpButton(
-        res,
-        eventId,
-        req.session as AppSessionStore,
-      );
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  expressApp.post("/events/:id/rsvp", async (req, res, next) => {
-    try {
-      const eventId = typeof req.params.id === "string" ? req.params.id : "";
-      await rsvpController.handleToggleRsvp(
-        res,
-        eventId,
-        req.session as AppSessionStore,
-      );
-    } catch (err) {
-      next(err);
-    }
-  });
 }

@@ -13,10 +13,6 @@ import type {
  * Drives the full Express stack with supertest: logs in through POST /login to
  * establish a real session cookie, then POSTs to /events/:id/rsvp to toggle
  * attendance, and GETs /events/:id/rsvp to render the button fragment.
- *
- * The production `CreateApp` does not yet register the RSVP routes, so the
- * test harness (`buildTestApp`) mounts them directly against the composed
- * Express instance using the real `RsvpController`.
  */
 describe("POST/GET /events/:id/rsvp — e2e", () => {
   let eventRepository: IEventRepository;
@@ -59,12 +55,24 @@ describe("POST/GET /events/:id/rsvp — e2e", () => {
       expect(res.text).toMatch(/log in/i);
     });
 
-    it("returns 401 when a GET is made without a session", async () => {
+    it("returns 401 when an HTMX GET is made without a session", async () => {
+      // The button fragment is always loaded via HTMX (hx-get + hx-trigger=load),
+      // so the realistic unauthenticated case sets the HX-Request header.
       const event = await seedEvent({ status: "published" });
-      const res = await request(expressApp).get(`/events/${event.id}/rsvp`);
+      const res = await request(expressApp)
+        .get(`/events/${event.id}/rsvp`)
+        .set("HX-Request", "true");
 
       expect(res.status).toBe(401);
       expect(res.text).toMatch(/log in/i);
+    });
+
+    it("redirects a plain GET to /login when no session is present", async () => {
+      const event = await seedEvent({ status: "published" });
+      const res = await request(expressApp).get(`/events/${event.id}/rsvp`);
+
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe("/login");
     });
   });
 
