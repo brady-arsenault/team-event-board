@@ -44,8 +44,9 @@ export interface IEventController {
     res: Response,
     filter: ListEventsFilter,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void>;
- eventDetailFromForm(
+  eventDetailFromForm(
     res: Response,
     eventId: string,
     store: AppSessionStore,
@@ -213,7 +214,7 @@ class EventController implements IEventController {
     res.redirect("/home");
   }
 
-  async publishEventFromForm(//added publish method to controller
+  async publishEventFromForm(
     res: Response,
     eventId: string,
     store: AppSessionStore,
@@ -255,7 +256,7 @@ class EventController implements IEventController {
     res.redirect("/home");
   }
 
-  async cancelEventFromForm(//added cancel method to controller
+  async cancelEventFromForm(
     res: Response,
     eventId: string,
     store: AppSessionStore,
@@ -301,6 +302,7 @@ class EventController implements IEventController {
     res: Response,
     filter: ListEventsFilter,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void> {
     const session = touchAppSession(store);
     const currentUser = getAuthenticatedUser(store);
@@ -325,6 +327,7 @@ class EventController implements IEventController {
           category: filter.category ?? "",
           timeframe: filter.timeframe ?? "",
         },
+        layout: isHtmx ? false : undefined,
       });
       return;
     }
@@ -337,56 +340,54 @@ class EventController implements IEventController {
         category: filter.category ?? "",
         timeframe: filter.timeframe ?? "",
       },
+      layout: isHtmx ? false : undefined,
     });
   }
-  
+
   async eventDetailFromForm(
-      res: Response,
-      eventId: string,
-      store: AppSessionStore,
-      isHtmx: boolean,
-    ): Promise<void> {
-      const session = touchAppSession(store);
-      const currentUser = getAuthenticatedUser(store);
+    res: Response,
+    eventId: string,
+    store: AppSessionStore,
+    isHtmx: boolean,
+  ): Promise<void> {
+    const session = touchAppSession(store);
+    const currentUser = getAuthenticatedUser(store);
 
-      if (!currentUser) {
-        res.status(401).render("partials/error", {
-          message: "Please log in to continue.",
-          layout: false,
-        });
-        return;
-      }
-
-      const result = await this.service.getEventById(eventId, {
-        userId: currentUser.userId,
-        role: currentUser.role,
-        displayName: currentUser.displayName,
+    if (!currentUser) {
+      res.status(401).render("partials/error", {
+        message: "Please log in to continue.",
+        layout: false,
       });
-
-      if (result.ok === false) {
-        const status = result.value.name === "EventNotFoundError" ? 404 : 403;
-        const log = status >= 500 ? this.logger.error : this.logger.warn;
-        log.call(this.logger, `Show event detail failed: ${result.value.message}`);
-        res.status(status).render("partials/error", {
-          message: result.value.message,
-          layout: false,
-        });
-        return;
-      }
-
-      const event = result.value;
-
-      res.render("events/detail", {
-        session,
-        event,
-        pageError: null,
-        layout: isHtmx ? false : undefined, // if HTMX request, render without layout
-      });
+      return;
     }
-  
-}
 
-  
+    const result = await this.service.getEventById(eventId, {
+      userId: currentUser.userId,
+      role: currentUser.role,
+      displayName: currentUser.displayName,
+    });
+
+    if (result.ok === false) {
+      const status = result.value.name === "EventNotFoundError" ? 404 : 403;
+      const log = status >= 500 ? this.logger.error : this.logger.warn;
+      log.call(this.logger, `Show event detail failed: ${result.value.message}`);
+      res.status(status).render("partials/error", {
+        message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    const event = result.value;
+
+    res.render("events/detail", {
+      session,
+      event,
+      pageError: null,
+      layout: isHtmx ? false : undefined,
+    });
+  }
+}
 
 export function CreateEventController(
   service: IEventService,
@@ -394,3 +395,4 @@ export function CreateEventController(
 ): IEventController {
   return new EventController(service, logger);
 }
+

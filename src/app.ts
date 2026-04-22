@@ -51,7 +51,6 @@ class ExpressApp implements IApp {
   }
 
   private registerMiddleware(): void {
-    // Serve static files from src/static (create this directory to add your own assets)
     this.app.use(express.static(path.join(process.cwd(), "src/static")));
     this.app.use(
       session({
@@ -79,10 +78,6 @@ class ExpressApp implements IApp {
     return req.get("HX-Request") === "true";
   }
 
-  /**
-   * Middleware helper: returns true if the request is from an authenticated user.
-   * If the user is not authenticated, it handles the response (redirect or 401).
-   */
   private requireAuthenticated(req: Request, res: Response): boolean {
     const store = sessionStore(req);
     touchAppSession(store);
@@ -104,11 +99,6 @@ class ExpressApp implements IApp {
     return false;
   }
 
-  /**
-   * Middleware helper: returns true if the authenticated user has one of the
-   * allowed roles. Calls requireAuthenticated first, so unauthenticated
-   * requests are handled automatically.
-   */
   private requireRole(
     req: Request,
     res: Response,
@@ -135,8 +125,6 @@ class ExpressApp implements IApp {
   }
 
   private registerRoutes(): void {
-    // ── Public routes ────────────────────────────────────────────────
-
     this.app.get(
       "/",
       asyncHandler(async (req, res) => {
@@ -176,8 +164,6 @@ class ExpressApp implements IApp {
         await this.authController.logoutFromForm(res, sessionStore(req));
       }),
     );
-
-    // ── Admin routes ─────────────────────────────────────────────────
 
     this.app.get(
       "/admin/users",
@@ -244,8 +230,6 @@ class ExpressApp implements IApp {
       }),
     );
 
-    // ── Authenticated home page ──────────────────────────────────────
-
     this.app.get(
       "/home",
       asyncHandler(async (req, res) => {
@@ -269,11 +253,10 @@ class ExpressApp implements IApp {
                 : undefined,
           },
           sessionStore(req),
+          this.isHtmxRequest(req),
         );
       }),
     );
-
-    // ── Feature 1: Event Creation (Brady) ──────────────────────
 
     this.app.get(
       "/events/create",
@@ -307,7 +290,6 @@ class ExpressApp implements IApp {
       }),
     );
 
-    // ── Feature 2: Event Detail Page (Gautham) ──────────────────────
     this.app.get(
       "/events/:id/detail",
       asyncHandler(async (req, res) => {
@@ -316,11 +298,14 @@ class ExpressApp implements IApp {
         }
 
         const eventId = typeof req.params.id === "string" ? req.params.id : "";
-        await this.eventController.eventDetailFromForm(res, eventId, sessionStore(req), this.isHtmxRequest(req));
+        await this.eventController.eventDetailFromForm(
+          res,
+          eventId,
+          sessionStore(req),
+          this.isHtmxRequest(req),
+        );
       }),
     );
-
-    // ── Feature 3: Event Edit (Brady) ──────────────────────
 
     this.app.get(
       "/events/edit/:id",
@@ -365,27 +350,7 @@ class ExpressApp implements IApp {
       }),
     );
 
-    // ── Feature 4: RSVP Toggle (Gautham) ────────────────────────────
-
-    this.app.get(
-      "/events/:id/rsvp",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
-        const eventId = typeof req.params.id === "string" ? req.params.id : "";
-        await this.rsvpController.showRsvpButton(res, eventId, sessionStore(req));
-      }),
-    );
-
     this.app.post(
-      "/events/:id/rsvp",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
-        const eventId = typeof req.params.id === "string" ? req.params.id : "";
-        await this.rsvpController.handleToggleRsvp(res, eventId, sessionStore(req));
-      }),
-    );
-        
-    this.app.post( //added publish method to app
       "/events/:id/publish",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) {
@@ -397,7 +362,7 @@ class ExpressApp implements IApp {
       }),
     );
 
-    this.app.post( //added cancel method to app
+    this.app.post(
       "/events/:id/cancel",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) {
@@ -409,8 +374,6 @@ class ExpressApp implements IApp {
       }),
     );
 
-    // ── Feature 7: My RSVPs Dashboard (Phan Ha) ──────────────────────
-
     this.app.get(
       "/my-rsvps",
       asyncHandler(async (req, res) => {
@@ -418,8 +381,6 @@ class ExpressApp implements IApp {
         await this.rsvpController.showDashboard(res, sessionStore(req));
       }),
     );
-
-    // ── Feature 10: Event Search (Phan Ha) ────────────────────────────
 
     this.app.get(
       "/events/search",
@@ -434,8 +395,6 @@ class ExpressApp implements IApp {
         );
       }),
     );
-
-    // ── Error handler ────────────────────────────────────────────────
 
     this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
       const message = err instanceof Error ? err.message : "Unexpected server error.";
@@ -469,3 +428,4 @@ export function CreateApp(
     eventSearchController,
   );
 }
+
