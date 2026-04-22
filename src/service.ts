@@ -28,6 +28,7 @@ class EventService implements IEventService {
     private readonly eventRepository: IEventRepository;
     private readonly eventSearchService: IEventSearchService;
     private readonly logger: ILoggingService;
+    private curr_ID = 0;
 
     constructor(eventRepository: IEventRepository, logger: ILoggingService) {
         this.eventRepository = eventRepository;
@@ -51,7 +52,7 @@ class EventService implements IEventService {
         }
 
         const event: IEvent = {
-            id: randomUUID(),
+            id: (this.curr_ID++).toString(),
             title: input.title,
             description: input.description,
             location: input.location,
