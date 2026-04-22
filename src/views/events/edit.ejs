@@ -5,7 +5,7 @@
     <%- include("partials/error", { message: pageError }) %>
   <% } %>
 
-  <form action="/events/<%= event.id %>/edit" method="post" class="space-y-5">
+  <form action="/events/edit/<%= event.id %>" method="post" class="space-y-5">
     <div>
       <label for="title" class="block text-sm font-medium text-slate-700 mb-2">Title</label>
       <input

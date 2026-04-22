@@ -66,6 +66,7 @@ class ExpressApp implements IApp {
     );
     this.app.use(Layouts);
     this.app.use(express.urlencoded({ extended: true }));
+    this.app.use(express.json());
   }
 
   private registerTemplating(): void {
@@ -345,6 +346,8 @@ class ExpressApp implements IApp {
               ? new Date(req.body.endAt)
               : undefined,
         };
+
+        this.logger.info('update all good')
 
         await this.eventController.updateEventFromForm(res, eventId, input, sessionStore(req));
       }),
