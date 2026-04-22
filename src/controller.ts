@@ -40,6 +40,7 @@ export interface IEventController {
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void>;
   showHome(
     res: Response,
@@ -288,6 +289,7 @@ class EventController implements IEventController {
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void> {
     const currentUser = getAuthenticatedUser(store);
 
@@ -317,6 +319,32 @@ class EventController implements IEventController {
       log.call(this.logger, `Cancel event failed: ${result.value.message}`);
       res.status(status).render("partials/error", {
         message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    if (isHtmx) {
+      const session = touchAppSession(store);
+      const updatedEventResult = await this.service.getEventById(eventId, {
+        userId: currentUser.userId,
+        role: currentUser.role,
+        displayName: currentUser.displayName,
+      });
+
+      if (updatedEventResult.ok === false) {
+        res.status(500).render("partials/error", {
+          message: "Updated event could not be loaded.",
+          layout: false,
+        });
+        return;
+      }
+
+      this.logger.info(`Cancelled event ${result.value.id}`);
+      res.render("events/detail", {
+        session,
+        event: updatedEventResult.value,
+        pageError: null,
         layout: false,
       });
       return;

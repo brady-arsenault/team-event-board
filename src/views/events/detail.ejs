@@ -88,7 +88,13 @@
         <% } %>
 
         <% if ((isOrganizer || isAdmin) && event.status === "published") { %>
-          <form action="/events/<%= event.id %>/cancel" method="post">
+          <form
+            action="/events/<%= event.id %>/cancel"
+            method="post"
+            hx-post="/events/<%= event.id %>/cancel"
+            hx-target="#event-detail"
+            hx-swap="outerHTML"
+          >
             <button
               type="submit"
               class="inline-flex items-center px-4 py-2 rounded-2xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700"
@@ -110,3 +116,4 @@
     </div>
   </div>
 </section>
+

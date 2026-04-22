@@ -391,7 +391,12 @@ class ExpressApp implements IApp {
         }
 
         const eventId = typeof req.params.id === "string" ? req.params.id : "";
-        await this.eventController.cancelEventFromForm(res, eventId, sessionStore(req));
+        await this.eventController.cancelEventFromForm(
+          res,
+          eventId,
+          sessionStore(req),
+          this.isHtmxRequest(req),
+        );
       }),
     );
 
