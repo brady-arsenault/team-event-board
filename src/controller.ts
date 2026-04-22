@@ -319,6 +319,15 @@ class EventController implements IEventController {
 
     if (result.ok === false) {
       this.logger.warn(`List events failed: ${result.value.message}`);
+
+      if (isHtmx) {
+        res.status(400).render("partials/error", {
+          message: result.value.message,
+          layout: false,
+        });
+        return;
+      }
+
       res.status(400).render("home", {
         session,
         pageError: result.value.message,
@@ -328,6 +337,14 @@ class EventController implements IEventController {
           timeframe: filter.timeframe ?? "",
         },
         layout: isHtmx ? false : undefined,
+      });
+      return;
+    }
+
+    if (isHtmx) {
+      res.render("events/partials/event-list", {
+        events: result.value,
+        layout: false,
       });
       return;
     }

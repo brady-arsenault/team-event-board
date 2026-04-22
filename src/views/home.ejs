@@ -101,55 +101,8 @@
     </p>
   </div>
 
-  <% if (!events || events.length === 0) { %>
-    <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6">
-      <p class="text-sm text-slate-500">
-        No events match the current filters.
-      </p>
-    </div>
-  <% } else { %>
-    <div class="grid gap-4">
-      <% events.forEach((event) => { %>
-        <article class="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h3 class="text-lg font-semibold text-slate-900"><%= event.title %></h3>
-              <p class="text-sm text-slate-500 mt-1">
-                <span class="font-medium text-slate-700"><%= event.category %></span>
-                ·
-                <span><%= event.location %></span>
-              </p>
-            </div>
-
-            <span class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600 border border-slate-200">
-              <%= event.status %>
-            </span>
-          </div>
-
-          <p class="text-slate-600 mt-3"><%= event.description %></p>
-
-          <div class="mt-4 grid gap-2 text-sm text-slate-600">
-            <p>
-              <span class="font-medium text-slate-700">Starts:</span>
-              <%= event.startAt.toLocaleString() %>
-            </p>
-            <p>
-              <span class="font-medium text-slate-700">Ends:</span>
-              <%= event.endAt.toLocaleString() %>
-            </p>
-            <p>
-              <span class="font-medium text-slate-700">Organizer:</span>
-              <%= event.organizerId %>
-            </p>
-            <% if (event.capacity !== null) { %>
-              <p>
-                <span class="font-medium text-slate-700">Capacity:</span>
-                <%= event.capacity %>
-              </p>
-            <% } %>
-          </div>
-        </article>
-      <% }) %>
-    </div>
-  <% } %>
+  <div id="event-list">
+    <%- include("events/partials/event-list", { events: events }) %>
+  </div>
 </section>
+
