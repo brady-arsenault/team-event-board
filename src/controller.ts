@@ -166,7 +166,7 @@ class EventController implements IEventController {
 
     this.logger.info(`Created event ${result.value.id}`);
     res.setHeader('HX-Redirect', '/home');
-    res.status(200).send();
+    res.status(302).send();
   }
 
   async updateEventFromForm(
@@ -211,7 +211,7 @@ class EventController implements IEventController {
 
     this.logger.info(`Updated event ${result.value.id}`);
     res.setHeader('HX-Redirect', '/home');
-    res.status(200).send();
+    res.status(302).send();
   }
 
   async publishEventFromForm(

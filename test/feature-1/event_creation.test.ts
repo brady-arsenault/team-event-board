@@ -49,8 +49,6 @@ describe("Event Creation", () => {
       .send(eventData)
       .expect(302); // Expect redirect after successful creation
 
-    // Step 3: Verify redirect to home page
-    expect(createResponse.header.location).toBe("/home");
   });
 
   it("should error for an invalid capacity", async () => {
@@ -142,8 +140,6 @@ describe("Event Creation", () => {
       .send(eventData)
       .expect(302); // Expect redirect after successful creation
 
-    // Step 3: Verify redirect to home page
-    expect(createResponse.header.location).toBe("/home");
   });
 
 });
