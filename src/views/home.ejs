@@ -39,7 +39,15 @@
     </p>
   </div>
 
-  <form action="/home" method="GET" class="grid gap-4 md:grid-cols-3">
+  <form
+    action="/home"
+    method="GET"
+    class="grid gap-4 md:grid-cols-3"
+    hx-get="/home"
+    hx-target="#event-list"
+    hx-push-url="true"
+    hx-trigger="change from:select, submit"
+  >
     <div>
       <label for="category" class="block text-sm font-medium text-slate-700 mb-2">
         Category
