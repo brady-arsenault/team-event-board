@@ -36,5 +36,13 @@ describe("Feature 6 filters", () => {
     expect(response.status).toBe(400);
     expect(response.text).toContain("Invalid timeframe filter.");
   });
-});
 
+  it("accepts a valid category and timeframe combination", async () => {
+    const app = makeApp();
+    const agent = await loginAsAdmin(app);
+    const response = await agent.get("/home?category=social&timeframe=upcoming");
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("Filter Events");
+    expect(response.text).toContain("Upcoming Events");
+  });
+});
