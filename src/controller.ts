@@ -34,6 +34,7 @@ export interface IEventController {
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void>;
   cancelEventFromForm(
     res: Response,
@@ -74,7 +75,7 @@ class EventController implements IEventController {
 
     res.render("events/create", {
       session,
-      message: null,
+      pageError: null,
     });
   }
 
@@ -154,19 +155,18 @@ class EventController implements IEventController {
     });
 
     if (result.ok === false) {
-      const status = result.value.name === "InvalidInputError" ? 200 : 403;
+      const status = result.value.name === "InvalidInputError" ? 400 : 403;
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Create event failed: ${result.value.message}`);
-      res.status(status).render("partials/error", {
-        message: result.value.message,
-        layout: false,
+      res.status(status).render("home", {
+        session,
+        pageError: result.value.message,
       });
       return;
     }
 
     this.logger.info(`Created event ${result.value.id}`);
-    res.setHeader('HX-Redirect', '/home');
-    res.status(200).send();
+    res.redirect("/home");
   }
 
   async updateEventFromForm(
@@ -215,10 +215,11 @@ class EventController implements IEventController {
     res.redirect("/home");
   }
 
-  async publishEventFromForm(
+  async publishEventFromForm(//added publish method to controller
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void> {
     const currentUser = getAuthenticatedUser(store);
 
@@ -253,11 +254,37 @@ class EventController implements IEventController {
       return;
     }
 
+    if (isHtmx) {
+      const session = touchAppSession(store);
+      const updatedEventResult = await this.service.getEventById(eventId, {
+        userId: currentUser.userId,
+        role: currentUser.role,
+        displayName: currentUser.displayName,
+      });
+
+      if (updatedEventResult.ok === false) {
+        res.status(500).render("partials/error", {
+          message: "Updated event could not be loaded.",
+          layout: false,
+        });
+        return;
+      }
+
+      this.logger.info(`Published event ${result.value.id}`);
+      res.render("events/detail", {
+        session,
+        event: updatedEventResult.value,
+        pageError: null,
+        layout: false,
+      });
+      return;
+    }
+
     this.logger.info(`Published event ${result.value.id}`);
     res.redirect("/home");
   }
 
-  async cancelEventFromForm(
+  async cancelEventFromForm(//added cancel method to controller
     res: Response,
     eventId: string,
     store: AppSessionStore,

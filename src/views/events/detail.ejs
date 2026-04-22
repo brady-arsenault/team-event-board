@@ -1,4 +1,4 @@
-<section class="max-w-3xl mx-auto p-6 border border-slate-200 rounded-3xl bg-white shadow-lg">
+<section id="event-detail" class="max-w-3xl mx-auto p-6 border border-slate-200 rounded-3xl bg-white shadow-lg">
   <div class="flex items-start justify-between gap-4 mb-6">
     <div>
       <h1 class="text-2xl font-bold text-slate-900"><%= event.title %></h1>
@@ -71,7 +71,13 @@
         <% const isAdmin = currentUser && currentUser.role === "admin"; %>
 
         <% if (isOrganizer && event.status === "draft") { %>
-          <form action="/events/<%= event.id %>/publish" method="post">
+          <form
+            action="/events/<%= event.id %>/publish"
+            method="post"
+            hx-post="/events/<%= event.id %>/publish"
+            hx-target="#event-detail"
+            hx-swap="outerHTML"
+          >
             <button
               type="submit"
               class="inline-flex items-center px-4 py-2 rounded-2xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700"
