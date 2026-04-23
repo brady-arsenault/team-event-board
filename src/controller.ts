@@ -34,18 +34,21 @@ export interface IEventController {
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void>;
   cancelEventFromForm(
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void>;
   showHome(
     res: Response,
     filter: ListEventsFilter,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void>;
- eventDetailFromForm(
+  eventDetailFromForm(
     res: Response,
     eventId: string,
     store: AppSessionStore,
@@ -156,15 +159,16 @@ class EventController implements IEventController {
       const status = result.value.name === "InvalidInputError" ? 400 : 403;
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Create event failed: ${result.value.message}`);
-      res.status(status).render("home", {
-        session,
-        pageError: result.value.message,
+      res.status(status).render("partials/error", {
+        message: result.value.message,
+        layout: false,
       });
       return;
     }
 
     this.logger.info(`Created event ${result.value.id}`);
-    res.redirect("/home");
+    res.setHeader('HX-Redirect', '/home');
+    res.status(302).send();
   }
 
   async updateEventFromForm(
@@ -200,23 +204,23 @@ class EventController implements IEventController {
 
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Update event failed: ${result.value.message}`);
-      res.status(status).render("events/edit", {
-        session,
-        pageError: result.value.message,
-        eventId,
-        input,
+      res.status(status).render("partials/error", {
+        message: result.value.message,
+        layout: false,
       });
       return;
     }
 
     this.logger.info(`Updated event ${result.value.id}`);
-    res.redirect("/home");
+    res.setHeader('HX-Redirect', '/home');
+    res.status(302).send();
   }
 
   async publishEventFromForm(//added publish method to controller
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void> {
     const currentUser = getAuthenticatedUser(store);
 
@@ -244,8 +248,60 @@ class EventController implements IEventController {
 
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Publish event failed: ${result.value.message}`);
+
+      if (isHtmx) {
+        const session = touchAppSession(store);
+        const eventResult = await this.service.getEventById(eventId, {
+          userId: currentUser.userId,
+          role: currentUser.role,
+          displayName: currentUser.displayName,
+        });
+
+        if (eventResult.ok === false) {
+          res.status(status).render("partials/error", {
+            message: result.value.message,
+            layout: false,
+          });
+          return;
+        }
+
+        res.status(status).render("events/detail", {
+          session,
+          event: eventResult.value,
+          pageError: result.value.message,
+          layout: false,
+        });
+        return;
+      }
+
       res.status(status).render("partials/error", {
         message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    if (isHtmx) {
+      const session = touchAppSession(store);
+      const updatedEventResult = await this.service.getEventById(eventId, {
+        userId: currentUser.userId,
+        role: currentUser.role,
+        displayName: currentUser.displayName,
+      });
+
+      if (updatedEventResult.ok === false) {
+        res.status(500).render("partials/error", {
+          message: "Updated event could not be loaded.",
+          layout: false,
+        });
+        return;
+      }
+
+      this.logger.info(`Published event ${result.value.id}`);
+      res.render("events/detail", {
+        session,
+        event: updatedEventResult.value,
+        pageError: null,
         layout: false,
       });
       return;
@@ -259,6 +315,7 @@ class EventController implements IEventController {
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void> {
     const currentUser = getAuthenticatedUser(store);
 
@@ -286,8 +343,60 @@ class EventController implements IEventController {
 
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Cancel event failed: ${result.value.message}`);
+
+      if (isHtmx) {
+        const session = touchAppSession(store);
+        const eventResult = await this.service.getEventById(eventId, {
+          userId: currentUser.userId,
+          role: currentUser.role,
+          displayName: currentUser.displayName,
+        });
+
+        if (eventResult.ok === false) {
+          res.status(status).render("partials/error", {
+            message: result.value.message,
+            layout: false,
+          });
+          return;
+        }
+
+        res.status(status).render("events/detail", {
+          session,
+          event: eventResult.value,
+          pageError: result.value.message,
+          layout: false,
+        });
+        return;
+      }
+
       res.status(status).render("partials/error", {
         message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    if (isHtmx) {
+      const session = touchAppSession(store);
+      const updatedEventResult = await this.service.getEventById(eventId, {
+        userId: currentUser.userId,
+        role: currentUser.role,
+        displayName: currentUser.displayName,
+      });
+
+      if (updatedEventResult.ok === false) {
+        res.status(500).render("partials/error", {
+          message: "Updated event could not be loaded.",
+          layout: false,
+        });
+        return;
+      }
+
+      this.logger.info(`Cancelled event ${result.value.id}`);
+      res.render("events/detail", {
+        session,
+        event: updatedEventResult.value,
+        pageError: null,
         layout: false,
       });
       return;
@@ -301,6 +410,7 @@ class EventController implements IEventController {
     res: Response,
     filter: ListEventsFilter,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void> {
     const session = touchAppSession(store);
     const currentUser = getAuthenticatedUser(store);
@@ -317,6 +427,15 @@ class EventController implements IEventController {
 
     if (result.ok === false) {
       this.logger.warn(`List events failed: ${result.value.message}`);
+
+      if (isHtmx) {
+        res.status(400).render("partials/error", {
+          message: result.value.message,
+          layout: false,
+        });
+        return;
+      }
+
       res.status(400).render("home", {
         session,
         pageError: result.value.message,
@@ -325,6 +444,15 @@ class EventController implements IEventController {
           category: filter.category ?? "",
           timeframe: filter.timeframe ?? "",
         },
+        layout: isHtmx ? false : undefined,
+      });
+      return;
+    }
+
+    if (isHtmx) {
+      res.render("events/partials/event-list", {
+        events: result.value,
+        layout: false,
       });
       return;
     }
@@ -337,56 +465,54 @@ class EventController implements IEventController {
         category: filter.category ?? "",
         timeframe: filter.timeframe ?? "",
       },
+      layout: isHtmx ? false : undefined,
     });
   }
-  
+
   async eventDetailFromForm(
-      res: Response,
-      eventId: string,
-      store: AppSessionStore,
-      isHtmx: boolean,
-    ): Promise<void> {
-      const session = touchAppSession(store);
-      const currentUser = getAuthenticatedUser(store);
+    res: Response,
+    eventId: string,
+    store: AppSessionStore,
+    isHtmx: boolean,
+  ): Promise<void> {
+    const session = touchAppSession(store);
+    const currentUser = getAuthenticatedUser(store);
 
-      if (!currentUser) {
-        res.status(401).render("partials/error", {
-          message: "Please log in to continue.",
-          layout: false,
-        });
-        return;
-      }
-
-      const result = await this.service.getEventById(eventId, {
-        userId: currentUser.userId,
-        role: currentUser.role,
-        displayName: currentUser.displayName,
+    if (!currentUser) {
+      res.status(401).render("partials/error", {
+        message: "Please log in to continue.",
+        layout: false,
       });
-
-      if (result.ok === false) {
-        const status = result.value.name === "EventNotFoundError" ? 404 : 403;
-        const log = status >= 500 ? this.logger.error : this.logger.warn;
-        log.call(this.logger, `Show event detail failed: ${result.value.message}`);
-        res.status(status).render("partials/error", {
-          message: result.value.message,
-          layout: false,
-        });
-        return;
-      }
-
-      const event = result.value;
-
-      res.render("events/detail", {
-        session,
-        event,
-        pageError: null,
-        layout: isHtmx ? false : undefined, // if HTMX request, render without layout
-      });
+      return;
     }
-  
-}
 
-  
+    const result = await this.service.getEventById(eventId, {
+      userId: currentUser.userId,
+      role: currentUser.role,
+      displayName: currentUser.displayName,
+    });
+
+    if (result.ok === false) {
+      const status = result.value.name === "EventNotFoundError" ? 404 : 403;
+      const log = status >= 500 ? this.logger.error : this.logger.warn;
+      log.call(this.logger, `Show event detail failed: ${result.value.message}`);
+      res.status(status).render("partials/error", {
+        message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    const event = result.value;
+
+    res.render("events/detail", {
+      session,
+      event,
+      pageError: null,
+      layout: isHtmx ? false : undefined,
+    });
+  }
+}
 
 export function CreateEventController(
   service: IEventService,
@@ -394,3 +520,4 @@ export function CreateEventController(
 ): IEventController {
   return new EventController(service, logger);
 }
+

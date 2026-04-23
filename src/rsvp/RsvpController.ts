@@ -58,7 +58,7 @@ class RsvpController implements IRsvpController {
       this.logger.warn(`Toggle RSVP failed: ${result.value.message}`);
       const status = result.value.name === "EventNotFoundError" ? 404
         : result.value.name === "UnauthorizedError" ? 403
-        : 422;
+        : 400;
       res.status(status).render("partials/error", { message: result.value.message, layout: false });
       return;
     }

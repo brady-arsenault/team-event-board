@@ -269,11 +269,10 @@ class ExpressApp implements IApp {
                 : undefined,
           },
           sessionStore(req),
+          this.isHtmxRequest(req),
         );
       }),
     );
-
-    // ── Feature 1: Event Creation (Brady) ──────────────────────
 
     this.app.get(
       "/events/create",
@@ -307,7 +306,6 @@ class ExpressApp implements IApp {
       }),
     );
 
-    // ── Feature 2: Event Detail Page (Gautham) ──────────────────────
     this.app.get(
       "/events/:id/detail",
       asyncHandler(async (req, res) => {
@@ -316,11 +314,14 @@ class ExpressApp implements IApp {
         }
 
         const eventId = typeof req.params.id === "string" ? req.params.id : "";
-        await this.eventController.eventDetailFromForm(res, eventId, sessionStore(req), this.isHtmxRequest(req));
+        await this.eventController.eventDetailFromForm(
+          res,
+          eventId,
+          sessionStore(req),
+          this.isHtmxRequest(req),
+        );
       }),
     );
-
-    // ── Feature 3: Event Edit (Brady) ──────────────────────
 
     this.app.get(
       "/events/edit/:id",
@@ -348,7 +349,7 @@ class ExpressApp implements IApp {
           location: typeof req.body.location === "string" ? req.body.location : undefined,
           category: typeof req.body.category === "string" ? req.body.category : undefined,
           capacity:
-            req.body.capacity === "" || req.body.capacity === undefined
+            req.body.capacity === "" || req.body.capacity === undefined || req.body.capacity === null
               ? undefined
               : Number(req.body.capacity),
           startAt:
@@ -365,7 +366,51 @@ class ExpressApp implements IApp {
       }),
     );
 
-    // ── Feature 4: RSVP Toggle (Gautham) ────────────────────────────
+    this.app.post( //added publish method to app
+      "/events/:id/publish",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.eventController.publishEventFromForm(
+          res,
+          eventId,
+          sessionStore(req),
+          this.isHtmxRequest(req),
+        );
+      }),
+    );
+
+    this.app.post( //added cancel method to app
+      "/events/:id/cancel",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const eventId = typeof req.params.id === "string" ? req.params.id : "";
+        await this.eventController.cancelEventFromForm(
+          res,
+          eventId,
+          sessionStore(req),
+          this.isHtmxRequest(req),
+        );
+      }),
+    );
+
+    // ── Feature 7: My RSVPs Dashboard (Phan Ha) ──────────────────────
+
+    this.app.get(
+      "/my-rsvps",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        await this.rsvpController.showDashboard(res, sessionStore(req));
+      }),
+    );
+
+    // ── Feature 10: Event Search (Phan Ha) ────────────────────────────
 
     this.app.get(
       "/events/:id/rsvp",
@@ -384,42 +429,6 @@ class ExpressApp implements IApp {
         await this.rsvpController.handleToggleRsvp(res, eventId, sessionStore(req));
       }),
     );
-        
-    this.app.post( //added publish method to app
-      "/events/:id/publish",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) {
-          return;
-        }
-
-        const eventId = typeof req.params.id === "string" ? req.params.id : "";
-        await this.eventController.publishEventFromForm(res, eventId, sessionStore(req));
-      }),
-    );
-
-    this.app.post( //added cancel method to app
-      "/events/:id/cancel",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) {
-          return;
-        }
-
-        const eventId = typeof req.params.id === "string" ? req.params.id : "";
-        await this.eventController.cancelEventFromForm(res, eventId, sessionStore(req));
-      }),
-    );
-
-    // ── Feature 7: My RSVPs Dashboard (Phan Ha) ──────────────────────
-
-    this.app.get(
-      "/my-rsvps",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
-        await this.rsvpController.showDashboard(res, sessionStore(req));
-      }),
-    );
-
-    // ── Feature 10: Event Search (Phan Ha) ────────────────────────────
 
     this.app.get(
       "/events/search",
@@ -469,3 +478,4 @@ export function CreateApp(
     eventSearchController,
   );
 }
+
