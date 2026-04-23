@@ -1,5 +1,5 @@
 import request from "supertest";
-import { buildTestApp } from "./helpers/buildTestApp";
+import { buildTestApp } from "../../helpers/buildTestApp";
 import {
   DEMO_PASSWORD,
   USER_EMAILS,
