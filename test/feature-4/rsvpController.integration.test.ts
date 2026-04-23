@@ -190,7 +190,7 @@ describe("RsvpController — integration", () => {
       expect(locals.message).toMatch(/not found/i);
     });
 
-    it("responds 422 (InvalidStateError) when the event is cancelled", async () => {
+    it("responds 400 (InvalidStateError) when the event is cancelled", async () => {
       const { eventRepo, controller } = build();
       const event = await eventRepo.create(
         makeEvent({ status: "cancelled" }),
@@ -206,13 +206,13 @@ describe("RsvpController — integration", () => {
       const res = makeMockResponse();
       await controller.handleToggleRsvp(res, event.id, store);
 
-      expect(res.status).toHaveBeenCalledWith(422);
+      expect(res.status).toHaveBeenCalledWith(400);
       const [template, locals] = res.render.mock.calls[0];
       expect(template).toBe("partials/error");
       expect(locals.message).toMatch(/cancelled|no longer/i);
     });
 
-    it("responds 422 when the event startAt is in the past", async () => {
+    it("responds 400 when the event startAt is in the past", async () => {
       const { eventRepo, controller } = build();
       const event = await eventRepo.create(
         makeEvent({
@@ -232,7 +232,7 @@ describe("RsvpController — integration", () => {
       const res = makeMockResponse();
       await controller.handleToggleRsvp(res, event.id, store);
 
-      expect(res.status).toHaveBeenCalledWith(422);
+      expect(res.status).toHaveBeenCalledWith(400);
     });
   });
 

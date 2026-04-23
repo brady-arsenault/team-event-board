@@ -189,24 +189,24 @@ describe("POST/GET /events/:id/rsvp — e2e", () => {
   });
 
   describe("rejected event states", () => {
-    it("returns 422 when toggling on a cancelled event", async () => {
+    it("returns 400 when toggling on a cancelled event", async () => {
       const event = await seedEvent({ status: "cancelled" });
       const agent = await login(USER_EMAILS.reader);
 
       const res = await agent.post(`/events/${event.id}/rsvp`);
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(400);
       expect(res.text).toMatch(/cancelled|no longer/i);
     });
 
-    it("returns 422 when toggling on a past event (status)", async () => {
+    it("returns 400 when toggling on a past event (status)", async () => {
       const event = await seedEvent({ status: "past" });
       const agent = await login(USER_EMAILS.reader);
 
       const res = await agent.post(`/events/${event.id}/rsvp`);
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(400);
     });
 
-    it("returns 422 when toggling on an event whose startAt is in the past", async () => {
+    it("returns 400 when toggling on an event whose startAt is in the past", async () => {
       const event = await seedEvent({
         status: "published",
         startAt: new Date("2000-01-01T00:00:00Z"),
@@ -215,7 +215,7 @@ describe("POST/GET /events/:id/rsvp — e2e", () => {
       const agent = await login(USER_EMAILS.reader);
 
       const res = await agent.post(`/events/${event.id}/rsvp`);
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(400);
     });
 
     it("does not persist an RSVP when the event is rejected", async () => {
