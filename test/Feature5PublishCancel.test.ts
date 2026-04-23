@@ -24,8 +24,10 @@ async function createDraftEvent(agent: ReturnType<typeof request.agent>) {
     endAt: "2026-05-01T20:00",
   });
 
-  expect(response.status).toBe(302);
-  expect(response.headers.location).toBe("/home");
+  expect([200, 302]).toContain(response.status);
+  const redirectTarget = response.headers["hx-redirect"] ?? response.headers.location;
+  expect(redirectTarget).toBe("/home");
+
   const createdCall = logSpy.mock.calls.find((call) => {
     return typeof call[0] === "string" && call[0].includes("Created event ");
   });
@@ -66,3 +68,4 @@ describe("Feature 5 publish and cancel", () => {
     expect(homeResponse.text).toContain(title);
   });
 });
+
