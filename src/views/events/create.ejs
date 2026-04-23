@@ -11,6 +11,7 @@
     hx-post="/events/create"
     hx-target="#error-slot"
     hx-swap="innerHTML"
+    hx-on::response-error="htmx.swap(htmx.find('#error-slot'), event.detail.xhr.responseText, {swapStyle:'innerHTML'})"
     class="space-y-5"
     
   >
