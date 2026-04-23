@@ -10,6 +10,7 @@ describe("Event Editing", () => {
   async function authenticate() {
     const loginResponse = await agent
       .post("/login")
+      .type("form")
       .send({
         email: "user@app.test",
         password: "password123",
@@ -43,6 +44,7 @@ describe("Event Editing", () => {
 
     const createResponse = await agent
       .post("/events/create")
+      .type("form")
       .send(eventData)
       .expect(302);
 
@@ -58,6 +60,7 @@ describe("Event Editing", () => {
 
     const editResponse = await agent
       .post("/events/edit/0")
+      .type("form")
       .send(updateData)
       .expect(302);
 
@@ -81,6 +84,7 @@ describe("Event Editing", () => {
 
     const createResponse = await agent
       .post("/events/create")
+      .type("form")
       .send(eventData)
       .expect(302);
 
@@ -96,9 +100,10 @@ describe("Event Editing", () => {
 
     const editResponse = await agent
       .post("/events/edit/0")
+      .type("form")
       .send(updateData)
       
-    expect(editResponse.status).toBe(200); // Expect bad request for invalid capacity
+    expect(editResponse.status).toBe(400); // Expect bad request for invalid capacity
     expect(editResponse.text).toContain("capacity must be a positive integer or null."); // Expect invalid capacity message
   });
 
@@ -120,6 +125,7 @@ describe("Event Editing", () => {
 
     const createResponse = await agent
       .post("/events/create")
+      .type("form")
       .send(eventData)
       .expect(302);
 
@@ -135,9 +141,10 @@ describe("Event Editing", () => {
 
     const editResponse = await agent
       .post("/events/edit/0")
+      .type("form")
       .send(updateData)
     
-    expect(editResponse.status).toBe(200);
+    expect(editResponse.status).toBe(400);
     expect(editResponse.text).toContain("startAt must be before endAt");
   });
 
@@ -160,6 +167,7 @@ describe("Event Editing", () => {
 
     const createResponse = await agent
       .post("/events/create")
+      .type("form")
       .send(eventData)
       .expect(302);
 
@@ -177,6 +185,7 @@ describe("Event Editing", () => {
 
     const editResponse = await agent
       .post("/events/edit/0")
+      .type("form")
       .send(updateData)
       
     expect(editResponse.status).toBe(401); // Expect bad request for unauthenticated user
@@ -204,6 +213,7 @@ describe("Event Editing", () => {
 
     const createResponse = await agent
       .post("/events/create")
+      .type("form")
       .send(eventData)
       .expect(302); // Expect redirect after successful creation
 
@@ -211,6 +221,7 @@ describe("Event Editing", () => {
 
     const loginResponse = await agent
       .post("/login")
+      .type("form")
       .send({
         email: "staff@app.test",
         password: "password123",
@@ -229,6 +240,7 @@ describe("Event Editing", () => {
 
     const editResponse = await agent
       .post("/events/edit/0")
+      .type("form")
       .send(updateData)
     
     expect(editResponse.status).toBe(403); // Expect unauthorized request for user who isn't organizer
@@ -258,6 +270,7 @@ describe("Event Editing", () => {
 
     const createResponse = await agent
       .post("/events/create")
+      .type("form")
       .send(eventData)
       .expect(302); // Expect redirect after successful creation
 
@@ -273,6 +286,7 @@ describe("Event Editing", () => {
 
     const editResponse = await agent
       .post("/events/edit/0")
+      .type("form")
       .send(updateData)
       .expect(302); // Expect redirect after successful edit
 

@@ -14,6 +14,7 @@ describe("Event Creation", () => {
   async function authenticate() {
     const loginResponse = await agent
       .post("/login")
+      .type("form")
       .send({
         email: "user@app.test",
         password: "password123",
@@ -46,6 +47,7 @@ describe("Event Creation", () => {
 
     const createResponse = await agent
       .post("/events/create")
+      .type("form")
       .send(eventData)
       .expect(302); // Expect redirect after successful creation
 
@@ -68,9 +70,10 @@ describe("Event Creation", () => {
 
     const createResponse = await agent
       .post("/events/create")
+      .type("form")
       .send(eventData)
       
-    expect(createResponse.status).toBe(200); // Expect bad request for invalid capacity
+    expect(createResponse.status).toBe(400); // Expect bad request for invalid capacity
     expect(createResponse.text).toContain("capacity must be a positive integer or null."); // Expect invalid capacity message
   });
 
@@ -91,9 +94,10 @@ describe("Event Creation", () => {
 
     const createResponse = await agent
       .post("/events/create")
+      .type("form")
       .send(eventData)
       
-    expect(createResponse.status).toBe(200); // Expect bad request for invalid date
+    expect(createResponse.status).toBe(400); // Expect bad request for invalid date
     expect(createResponse.text).toContain("startAt must be before endAt"); // Expect invalid date message
   });
 
@@ -112,6 +116,7 @@ describe("Event Creation", () => {
 
     const createResponse = await agent
       .post("/events/create")
+      .type("form")
       .send(eventData)
       
     expect(createResponse.status).toBe(401); // Expect bad request for unauthenticated user
@@ -137,6 +142,7 @@ describe("Event Creation", () => {
 
     const createResponse = await agent
       .post("/events/create")
+      .type("form")
       .send(eventData)
       .expect(302); // Expect redirect after successful creation
 
