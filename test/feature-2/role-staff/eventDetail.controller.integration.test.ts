@@ -6,7 +6,7 @@ import {
   signInAuthenticatedUser,
   type AppSessionStore,
 } from "../../../src/session/AppSession";
-import { silentLogger } from "./helpers/buildTestApp";
+import { silentLogger } from "../../helpers/buildTestApp";
 import { makeEvent, USER_IDS } from "./helpers/fixtures";
 
 /**

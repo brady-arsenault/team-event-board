@@ -3,7 +3,7 @@ import type {
   IEventRepository,
   IRsvpRepository,
 } from "../../src/contracts";
-import { silentLogger } from "./helpers/buildTestApp";
+import { silentLogger } from "../helpers/buildTestApp";
 import {
   makeActingUser,
   makeEvent,
