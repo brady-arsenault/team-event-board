@@ -195,7 +195,7 @@ class EventController implements IEventController {
     });
 
     if (result.ok === false) {
-      let status = 200;
+      let status = 400;
       if (result.value.name === "EventNotFoundError") {
         status = 404;
       } else if (result.value.name === "UnauthorizedError") {
