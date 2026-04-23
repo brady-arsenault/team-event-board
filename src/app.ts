@@ -406,7 +406,11 @@ class ExpressApp implements IApp {
       "/my-rsvps",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) return;
-        await this.rsvpController.showDashboard(res, sessionStore(req));
+        await this.rsvpController.showDashboard(
+          res,
+          sessionStore(req),
+          this.isHtmxRequest(req),
+        );
       }),
     );
 

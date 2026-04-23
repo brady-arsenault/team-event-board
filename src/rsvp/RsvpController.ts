@@ -10,7 +10,11 @@ import {
 export interface IRsvpController {
   showRsvpButton(res: Response, eventId: string, store: AppSessionStore): Promise<void>;
   handleToggleRsvp(res: Response, eventId: string, store: AppSessionStore): Promise<void>;
-  showDashboard(res: Response, store: AppSessionStore): Promise<void>;
+  showDashboard(
+    res: Response,
+    store: AppSessionStore,
+    isHtmx: boolean,
+  ): Promise<void>;
 }
 
 class RsvpController implements IRsvpController {
@@ -66,7 +70,11 @@ class RsvpController implements IRsvpController {
     res.render("rsvp/button", { eventId, rsvp: result.value, layout: false });
   }
 
-  async showDashboard(res: Response, store: AppSessionStore): Promise<void> {
+  async showDashboard(
+    res: Response,
+    store: AppSessionStore,
+    isHtmx: boolean,
+  ): Promise<void> {
     const session = touchAppSession(store);
     const currentUser = getAuthenticatedUser(store);
 
@@ -88,6 +96,15 @@ class RsvpController implements IRsvpController {
       this.logger.warn(`Show RSVP dashboard failed: ${result.value.message}`);
       res.status(403).render("partials/error", {
         message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    if (isHtmx) {
+      res.render("rsvp/partials/dashboard-content", {
+        upcoming: result.value.upcoming,
+        past: result.value.past,
         layout: false,
       });
       return;
