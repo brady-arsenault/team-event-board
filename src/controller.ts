@@ -129,7 +129,7 @@ class EventController implements IEventController {
     res.render("events/edit", {
       session,
       event,
-      pageError: null,
+      message: null,
     });
   }
 
@@ -167,7 +167,8 @@ class EventController implements IEventController {
     }
 
     this.logger.info(`Created event ${result.value.id}`);
-    res.redirect("/home");
+    res.setHeader('HX-Redirect', '/home');
+    res.status(302).send();
   }
 
   async updateEventFromForm(
@@ -194,7 +195,7 @@ class EventController implements IEventController {
     });
 
     if (result.ok === false) {
-      let status = 400;
+      let status = 200;
       if (result.value.name === "EventNotFoundError") {
         status = 404;
       } else if (result.value.name === "UnauthorizedError") {
@@ -203,17 +204,16 @@ class EventController implements IEventController {
 
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Update event failed: ${result.value.message}`);
-      res.status(status).render("events/edit", {
-        session,
-        pageError: result.value.message,
-        eventId,
-        input,
+      res.status(status).render("partials/error", {
+        message: result.value.message,
+        layout: false,
       });
       return;
     }
 
     this.logger.info(`Updated event ${result.value.id}`);
-    res.redirect("/home");
+    res.setHeader('HX-Redirect', '/home');
+    res.status(302).send();
   }
 
   async publishEventFromForm(//added publish method to controller

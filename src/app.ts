@@ -349,7 +349,7 @@ class ExpressApp implements IApp {
           location: typeof req.body.location === "string" ? req.body.location : undefined,
           category: typeof req.body.category === "string" ? req.body.category : undefined,
           capacity:
-            req.body.capacity === "" || req.body.capacity === undefined
+            req.body.capacity === "" || req.body.capacity === undefined || req.body.capacity === null
               ? undefined
               : Number(req.body.capacity),
           startAt:

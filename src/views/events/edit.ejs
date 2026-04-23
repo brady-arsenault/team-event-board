@@ -1,11 +1,19 @@
 <section class="max-w-3xl mx-auto p-6 border border-slate-200 rounded-3xl bg-white shadow-lg">
   <h1 class="text-2xl font-bold text-slate-900 mb-4">Edit Event</h1>
 
-  <% if (pageError) { %>
-    <%- include("partials/error", { message: pageError }) %>
-  <% } %>
+  <div id="error-slot">
+    <% if (message) { %>
+      <%- include("partials/error", { message: message }) %>
+    <% } %>
+  </div>
 
-  <form action="/events/edit/<%= event.id %>" method="post" class="space-y-5">
+  <form
+    hx-post="/events/edit/<%= event.id %>"
+    hx-target="#error-slot"
+    hx-swap="innerHTML"
+    class="space-y-5"
+    
+  >
     <div>
       <label for="title" class="block text-sm font-medium text-slate-700 mb-2">Title</label>
       <input
