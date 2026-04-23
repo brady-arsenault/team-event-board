@@ -34,11 +34,13 @@ export interface IEventController {
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void>;
   cancelEventFromForm(
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void>;
   showHome(
     res: Response,
@@ -74,7 +76,7 @@ class EventController implements IEventController {
 
     res.render("events/create", {
       session,
-      message: null,
+      pageError: null,
     });
   }
 
@@ -154,12 +156,12 @@ class EventController implements IEventController {
     });
 
     if (result.ok === false) {
-      const status = result.value.name === "InvalidInputError" ? 200 : 403;
+      const status = result.value.name === "InvalidInputError" ? 400 : 403;
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Create event failed: ${result.value.message}`);
-      res.status(status).render("partials/error", {
-        message: result.value.message,
-        layout: false,
+      res.status(status).render("home", {
+        session,
+        pageError: result.value.message,
       });
       return;
     }
@@ -214,10 +216,11 @@ class EventController implements IEventController {
     res.status(302).send();
   }
 
-  async publishEventFromForm(
+  async publishEventFromForm(//added publish method to controller
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void> {
     const currentUser = getAuthenticatedUser(store);
 
@@ -245,8 +248,60 @@ class EventController implements IEventController {
 
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Publish event failed: ${result.value.message}`);
+
+      if (isHtmx) {
+        const session = touchAppSession(store);
+        const eventResult = await this.service.getEventById(eventId, {
+          userId: currentUser.userId,
+          role: currentUser.role,
+          displayName: currentUser.displayName,
+        });
+
+        if (eventResult.ok === false) {
+          res.status(status).render("partials/error", {
+            message: result.value.message,
+            layout: false,
+          });
+          return;
+        }
+
+        res.status(status).render("events/detail", {
+          session,
+          event: eventResult.value,
+          pageError: result.value.message,
+          layout: false,
+        });
+        return;
+      }
+
       res.status(status).render("partials/error", {
         message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    if (isHtmx) {
+      const session = touchAppSession(store);
+      const updatedEventResult = await this.service.getEventById(eventId, {
+        userId: currentUser.userId,
+        role: currentUser.role,
+        displayName: currentUser.displayName,
+      });
+
+      if (updatedEventResult.ok === false) {
+        res.status(500).render("partials/error", {
+          message: "Updated event could not be loaded.",
+          layout: false,
+        });
+        return;
+      }
+
+      this.logger.info(`Published event ${result.value.id}`);
+      res.render("events/detail", {
+        session,
+        event: updatedEventResult.value,
+        pageError: null,
         layout: false,
       });
       return;
@@ -256,10 +311,11 @@ class EventController implements IEventController {
     res.redirect("/home");
   }
 
-  async cancelEventFromForm(
+  async cancelEventFromForm(//added cancel method to controller
     res: Response,
     eventId: string,
     store: AppSessionStore,
+    isHtmx: boolean,
   ): Promise<void> {
     const currentUser = getAuthenticatedUser(store);
 
@@ -287,8 +343,60 @@ class EventController implements IEventController {
 
       const log = status >= 500 ? this.logger.error : this.logger.warn;
       log.call(this.logger, `Cancel event failed: ${result.value.message}`);
+
+      if (isHtmx) {
+        const session = touchAppSession(store);
+        const eventResult = await this.service.getEventById(eventId, {
+          userId: currentUser.userId,
+          role: currentUser.role,
+          displayName: currentUser.displayName,
+        });
+
+        if (eventResult.ok === false) {
+          res.status(status).render("partials/error", {
+            message: result.value.message,
+            layout: false,
+          });
+          return;
+        }
+
+        res.status(status).render("events/detail", {
+          session,
+          event: eventResult.value,
+          pageError: result.value.message,
+          layout: false,
+        });
+        return;
+      }
+
       res.status(status).render("partials/error", {
         message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    if (isHtmx) {
+      const session = touchAppSession(store);
+      const updatedEventResult = await this.service.getEventById(eventId, {
+        userId: currentUser.userId,
+        role: currentUser.role,
+        displayName: currentUser.displayName,
+      });
+
+      if (updatedEventResult.ok === false) {
+        res.status(500).render("partials/error", {
+          message: "Updated event could not be loaded.",
+          layout: false,
+        });
+        return;
+      }
+
+      this.logger.info(`Cancelled event ${result.value.id}`);
+      res.render("events/detail", {
+        session,
+        event: updatedEventResult.value,
+        pageError: null,
         layout: false,
       });
       return;
