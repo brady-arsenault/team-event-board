@@ -163,6 +163,70 @@ describe("Feature 4 — toggleRsvp on Prisma + SQLite", () => {
     expect(mine?.status).toBe("waitlisted");
   });
 
+  it("creates a 'waitlisted' RSVP when the event is over-capacity", async () => {
+    const event = await insertEvent(prisma, { capacity: 2 });
+    insertUser(dbPath, "user-extra");
+    // 3 going rows on a capacity-2 event — over capacity.
+    await prisma.rsvp.createMany({
+      data: [USER_IDS.staff, USER_IDS.admin, "user-extra"].map((userId) => ({
+        id: randomUUID(),
+        eventId: event.id,
+        userId,
+        status: "going",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    });
+
+    const result = await service.toggleRsvp(event.id, makeActingUser());
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.status).toBe("waitlisted");
+  });
+
+  it("creates a 'going' RSVP when capacity is null (unlimited) regardless of going count", async () => {
+    const event = await insertEvent(prisma, { capacity: null });
+    // Stuff in many going rows.
+    const fillerUsers = Array.from({ length: 20 }, (_, i) => `filler-${i}`);
+    const db = new Database(dbPath);
+    for (const id of fillerUsers) {
+      db.prepare(
+        `INSERT INTO "User" (id, email, displayName, role, passwordHash) VALUES (?, ?, ?, ?, ?)`,
+      ).run(id, `${id}@test.local`, id, "user", "x");
+    }
+    db.close();
+    await prisma.rsvp.createMany({
+      data: fillerUsers.map((userId) => ({
+        id: randomUUID(),
+        eventId: event.id,
+        userId,
+        status: "going",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    });
+
+    const result = await service.toggleRsvp(event.id, makeActingUser());
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.status).toBe("going");
+  });
+
+  it("stamps createdAt and updatedAt to the same instant on a new RSVP", async () => {
+    const event = await insertEvent(prisma, { capacity: 10 });
+
+    const result = await service.toggleRsvp(event.id, makeActingUser());
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.createdAt).toBeInstanceOf(Date);
+      expect(result.value.updatedAt).toBeInstanceOf(Date);
+      expect(result.value.createdAt.getTime()).toBe(
+        result.value.updatedAt.getTime(),
+      );
+    }
+  });
+
   it("toggles an existing 'going' RSVP off ('cancelled') without re-counting capacity", async () => {
     const event = await insertEvent(prisma, { capacity: 10 });
     await service.toggleRsvp(event.id, makeActingUser()); // going
@@ -176,6 +240,43 @@ describe("Feature 4 — toggleRsvp on Prisma + SQLite", () => {
       where: { eventId: event.id, status: "going" },
     });
     expect(going).toBe(0);
+  });
+
+  it("cancels a 'waitlisted' RSVP when clicked again", async () => {
+    const event = await insertEvent(prisma, { capacity: 1 });
+    // Fill the seat with another user, then waitlist the reader.
+    await prisma.rsvp.create({
+      data: {
+        id: randomUUID(),
+        eventId: event.id,
+        userId: USER_IDS.staff,
+        status: "going",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    await service.toggleRsvp(event.id, makeActingUser()); // waitlisted
+
+    const result = await service.toggleRsvp(event.id, makeActingUser());
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.status).toBe("cancelled");
+  });
+
+  it("re-activates a cancelled RSVP as 'going' when there is still capacity", async () => {
+    const event = await insertEvent(prisma, { capacity: 10 });
+    await service.toggleRsvp(event.id, makeActingUser()); // going
+    await service.toggleRsvp(event.id, makeActingUser()); // cancel
+
+    const result = await service.toggleRsvp(event.id, makeActingUser());
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.status).toBe("going");
+
+    const rows = await prisma.rsvp.findMany({
+      where: { eventId: event.id, userId: USER_IDS.reader },
+    });
+    expect(rows).toHaveLength(1);
   });
 
   it("re-activating a cancelled RSVP picks 'going' or 'waitlisted' based on the LIVE count", async () => {
@@ -205,6 +306,75 @@ describe("Feature 4 — toggleRsvp on Prisma + SQLite", () => {
 
   it("rejects RSVPs to a cancelled event", async () => {
     const event = await insertEvent(prisma, { status: "cancelled" });
+
+    const result = await service.toggleRsvp(event.id, makeActingUser());
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.value.name).toBe("InvalidStateError");
+    const rows = await prisma.rsvp.findMany({ where: { eventId: event.id } });
+    expect(rows).toHaveLength(0);
+  });
+
+  it("does not create or update any RSVP when the event is rejected", async () => {
+    const event = await insertEvent(prisma, { status: "cancelled" });
+    // Pre-existing cancelled RSVP for the reader.
+    const preexisting = {
+      id: randomUUID(),
+      eventId: event.id,
+      userId: USER_IDS.reader,
+      status: "cancelled" as const,
+      createdAt: new Date("2026-04-01T00:00:00Z"),
+      updatedAt: new Date("2026-04-01T00:00:00Z"),
+    };
+    await prisma.rsvp.create({ data: preexisting });
+
+    const result = await service.toggleRsvp(event.id, makeActingUser());
+    expect(result.ok).toBe(false);
+
+    const after = await prisma.rsvp.findUnique({
+      where: {
+        eventId_userId: { eventId: event.id, userId: USER_IDS.reader },
+      },
+    });
+    expect(after?.status).toBe("cancelled");
+    expect(after?.updatedAt.getTime()).toBe(preexisting.updatedAt.getTime());
+  });
+
+  it.each([
+    { goingCount: 0, expected: "going" },
+    { goingCount: 4, expected: "going" },
+    { goingCount: 5, expected: "waitlisted" },
+    { goingCount: 100, expected: "waitlisted" },
+  ])(
+    "with capacity=5 and goingCount=$goingCount, new RSVP becomes '$expected'",
+    async ({ goingCount, expected }) => {
+      const event = await insertEvent(prisma, { capacity: 5 });
+
+      // Seed `goingCount` going rows under unique synthetic users.
+      for (let i = 0; i < goingCount; i++) {
+        const userId = `boundary-${i}`;
+        insertUser(dbPath, userId);
+        await prisma.rsvp.create({
+          data: {
+            id: randomUUID(),
+            eventId: event.id,
+            userId,
+            status: "going",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+      }
+
+      const result = await service.toggleRsvp(event.id, makeActingUser());
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.status).toBe(expected);
+    },
+  );
+
+  it("rejects RSVPs to an event whose status is 'past'", async () => {
+    const event = await insertEvent(prisma, { status: "past" });
 
     const result = await service.toggleRsvp(event.id, makeActingUser());
 
