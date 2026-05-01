@@ -6,6 +6,15 @@ describe("Event Editing", () => {
   let app: IApp;
   let agent: ReturnType<typeof request.agent>;
 
+  async function createEventGetId(eventData: Record<string, unknown>): Promise<string> {
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await agent.post("/events/create").type("form").send(eventData).expect(302);
+    const created = logSpy.mock.calls.find(
+      (call) => typeof call[0] === "string" && call[0].includes("Created event "),
+    );
+    logSpy.mockRestore();
+    return String(created?.[0]).split("Created event ")[1];
+  }
 
   async function authenticate() {
     const loginResponse = await agent
@@ -42,11 +51,7 @@ describe("Event Editing", () => {
       endAt: new Date(Date.now() + 90000000).toISOString(), 
     };
 
-    const createResponse = await agent
-      .post("/events/create")
-      .type("form")
-      .send(eventData)
-      .expect(302);
+    const eventId = await createEventGetId(eventData);
 
     const updateData = {
       title: "Test Event 2",
@@ -59,7 +64,7 @@ describe("Event Editing", () => {
     }
 
     const editResponse = await agent
-      .post("/events/edit/0")
+      .post(`/events/edit/${eventId}`)
       .type("form")
       .send(updateData)
       .expect(302);
@@ -82,11 +87,7 @@ describe("Event Editing", () => {
       endAt: new Date(Date.now() + 90000000).toISOString(), 
     };
 
-    const createResponse = await agent
-      .post("/events/create")
-      .type("form")
-      .send(eventData)
-      .expect(302);
+    const eventId = await createEventGetId(eventData);
 
     const updateData = {
       title: "Test Event 2",
@@ -99,7 +100,7 @@ describe("Event Editing", () => {
     }
 
     const editResponse = await agent
-      .post("/events/edit/0")
+      .post(`/events/edit/${eventId}`)
       .type("form")
       .send(updateData)
       
@@ -123,11 +124,7 @@ describe("Event Editing", () => {
       endAt: new Date(Date.now() + 90000000).toISOString(), 
     };
 
-    const createResponse = await agent
-      .post("/events/create")
-      .type("form")
-      .send(eventData)
-      .expect(302);
+    const eventId = await createEventGetId(eventData);
 
     const updateData = {
       title: "Test Event 2",
@@ -140,7 +137,7 @@ describe("Event Editing", () => {
     }
 
     const editResponse = await agent
-      .post("/events/edit/0")
+      .post(`/events/edit/${eventId}`)
       .type("form")
       .send(updateData)
     
@@ -165,11 +162,7 @@ describe("Event Editing", () => {
       endAt: new Date(Date.now() + 90000000).toISOString(), // Day after tomorrow
     };
 
-    const createResponse = await agent
-      .post("/events/create")
-      .type("form")
-      .send(eventData)
-      .expect(302);
+    const eventId = await createEventGetId(eventData);
 
     await agent.post("/logout").expect(302);
 
@@ -184,7 +177,7 @@ describe("Event Editing", () => {
     }
 
     const editResponse = await agent
-      .post("/events/edit/0")
+      .post(`/events/edit/${eventId}`)
       .type("form")
       .send(updateData)
       
@@ -211,11 +204,7 @@ describe("Event Editing", () => {
       endAt: new Date(Date.now() + 90000000).toISOString(), // Day after tomorrow
     };
 
-    const createResponse = await agent
-      .post("/events/create")
-      .type("form")
-      .send(eventData)
-      .expect(302); // Expect redirect after successful creation
+    const eventId = await createEventGetId(eventData); // Expect redirect after successful creation
 
     await agent.post("/logout").expect(302);
 
@@ -239,7 +228,7 @@ describe("Event Editing", () => {
     }
 
     const editResponse = await agent
-      .post("/events/edit/0")
+      .post(`/events/edit/${eventId}`)
       .type("form")
       .send(updateData)
     
@@ -268,11 +257,7 @@ describe("Event Editing", () => {
       endAt: new Date(Date.now() + 90000000).toISOString(), // Day after tomorrow
     };
 
-    const createResponse = await agent
-      .post("/events/create")
-      .type("form")
-      .send(eventData)
-      .expect(302); // Expect redirect after successful creation
+    const eventId = await createEventGetId(eventData); // Expect redirect after successful creation
 
     const updateData = {
       title: "Test Event 2",
@@ -285,7 +270,7 @@ describe("Event Editing", () => {
     }
 
     const editResponse = await agent
-      .post("/events/edit/0")
+      .post(`/events/edit/${eventId}`)
       .type("form")
       .send(updateData)
       .expect(302); // Expect redirect after successful edit

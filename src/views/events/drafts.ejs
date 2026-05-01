@@ -1,0 +1,116 @@
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900 mb-3">My Drafts</h1>
+      <p class="text-slate-500">
+        Events you have created but not yet published. Publish a draft to make it
+        visible on the events board.
+      </p>
+    </div>
+    <div class="shrink-0 flex gap-3">
+      <a
+        href="/home"
+        class="inline-flex items-center px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50"
+      >
+        Published Events
+      </a>
+      <a
+        href="/events/create"
+        class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"
+      >
+        Create Event
+      </a>
+    </div>
+  </div>
+</section>
+
+<% if (pageError) { %>
+  <%- include("../partials/error", { message: pageError }) %>
+<% } %>
+
+<section class="max-w-5xl p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+  <div class="mb-3">
+    <h2 class="text-xl font-semibold text-slate-900">Draft Events</h2>
+    <p class="text-slate-500 mt-1">
+      <% if (drafts.length === 0) { %>
+        You don't have any draft events.
+      <% } else { %>
+        Review and publish your drafts below.
+      <% } %>
+    </p>
+  </div>
+
+  <% if (drafts.length === 0) { %>
+    <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6">
+      <p class="text-sm text-slate-500">
+        No drafts yet. <a class="text-blue-700 font-medium hover:underline" href="/events/create">Create an event</a> to get started.
+      </p>
+    </div>
+  <% } else { %>
+    <div class="grid gap-4">
+      <% drafts.forEach((event) => { %>
+        <article class="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-lg font-semibold text-slate-900"><%= event.title %></h3>
+              <p class="text-sm text-slate-500 mt-1">
+                <span class="font-medium text-slate-700"><%= event.category %></span>
+                ·
+                <span><%= event.location %></span>
+              </p>
+            </div>
+            <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 border border-amber-200">
+              <%= event.status %>
+            </span>
+          </div>
+
+          <p class="text-slate-600 mt-3"><%= event.description %></p>
+
+          <div class="mt-4 grid gap-2 text-sm text-slate-600">
+            <p>
+              <span class="font-medium text-slate-700">Starts:</span>
+              <%= event.startAt.toLocaleString() %>
+            </p>
+            <p>
+              <span class="font-medium text-slate-700">Ends:</span>
+              <%= event.endAt.toLocaleString() %>
+            </p>
+            <% if (event.capacity !== null) { %>
+              <p>
+                <span class="font-medium text-slate-700">Capacity:</span>
+                <%= event.capacity %>
+              </p>
+            <% } %>
+          </div>
+
+          <div class="mt-4 flex items-center gap-3">
+            <form
+              action="/events/<%= event.id %>/publish"
+              method="post"
+              class="m-0"
+            >
+              <button
+                type="submit"
+                class="inline-flex items-center px-4 py-2 rounded-2xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700"
+              >
+                Publish
+              </button>
+            </form>
+            <a
+              href="/events/edit/<%= event.id %>"
+              class="inline-flex items-center px-4 py-2 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+            >
+              Edit
+            </a>
+            <a
+              href="/events/<%= event.id %>/detail"
+              class="inline-flex items-center px-4 py-2 rounded-2xl border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50"
+            >
+              View
+            </a>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  <% } %>
+</section>

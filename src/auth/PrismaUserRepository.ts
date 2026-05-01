@@ -82,13 +82,10 @@ class PrismaUserRepository implements IUserRepository {
 
   async deleteUser(id: string): Promise<Result<boolean, AuthError>> {
     try {
-      // Prisma throws P2025 if the row doesn't exist; mirror the in-memory
-      // contract by translating that into Ok(false).
-      const existing = await this.prisma.user.findUnique({ where: { id } });
-      if (!existing) return Ok(false);
       await this.prisma.user.delete({ where: { id } });
       return Ok(true);
     } catch (error) {
+      if (isRecordNotFound(error)) return Ok(false);
       return Err(
         UnexpectedDependencyError(
           `Unable to delete the user: ${describe(error)}`,
@@ -96,6 +93,15 @@ class PrismaUserRepository implements IUserRepository {
       );
     }
   }
+}
+
+function isRecordNotFound(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: unknown }).code === "P2025"
+  );
 }
 
 function toDomain(row: {

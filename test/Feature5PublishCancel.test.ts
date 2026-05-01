@@ -26,7 +26,7 @@ async function createDraftEvent(agent: ReturnType<typeof request.agent>) {
 
   expect([200, 302]).toContain(response.status);
   const redirectTarget = response.headers["hx-redirect"] ?? response.headers.location;
-  expect(redirectTarget).toBe("/home");
+  expect(redirectTarget).toBe("/events/drafts");
 
   const createdCall = logSpy.mock.calls.find((call) => {
     return typeof call[0] === "string" && call[0].includes("Created event ");

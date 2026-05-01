@@ -9,6 +9,7 @@ import {
   IEvent,
   IEventRepository,
   IEventService,
+  ListDraftsError,
   ListEventsError,
   ListEventsFilter,
   PublishEventError,
@@ -24,11 +25,56 @@ import { Err, Ok, Result } from "./lib/result";
 import { ILoggingService } from "./service/LoggingService";
 import { CreateEventSearchService, IEventSearchService } from "./events/EventSearchService";
 
+/**
+ * Treat a published event whose endAt is in the past as "past". The repository
+ * never writes "past" — it's derived at read time so we don't need a scheduled
+ * job to flip statuses.
+ */
+export function deriveEventStatus(event: IEvent, now: Date = new Date()): IEvent {
+    if (event.status === "published" && event.endAt < now) {
+        return { ...event, status: "past" };
+    }
+    return event;
+}
+
+interface TimeframeRange {
+    startAfter?: Date;
+    endBefore?: Date;
+}
+
+function computeTimeframeRange(
+    timeframe: ListEventsFilter["timeframe"],
+    now: Date,
+): TimeframeRange | undefined {
+    if (timeframe === "this-week") {
+        const endOfWeek = new Date(now);
+        const currentDay = now.getDay();
+        const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
+        endOfWeek.setDate(now.getDate() + daysUntilSunday);
+        endOfWeek.setHours(23, 59, 59, 999);
+        return { endBefore: endOfWeek };
+    }
+
+    if (timeframe === "this-weekend") {
+        const currentDay = now.getDay();
+        const weekendStart = new Date(now);
+        const weekendEnd = new Date(now);
+        const daysUntilSaturday = currentDay === 0 ? -1 : 6 - currentDay;
+        const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
+        weekendStart.setDate(now.getDate() + daysUntilSaturday);
+        weekendStart.setHours(0, 0, 0, 0);
+        weekendEnd.setDate(now.getDate() + daysUntilSunday);
+        weekendEnd.setHours(23, 59, 59, 999);
+        return { startAfter: weekendStart, endBefore: weekendEnd };
+    }
+
+    return undefined;
+}
+
 class EventService implements IEventService {
     private readonly eventRepository: IEventRepository;
     private readonly eventSearchService: IEventSearchService;
     private readonly logger: ILoggingService;
-    private curr_ID = 0;
 
     constructor(eventRepository: IEventRepository, logger: ILoggingService) {
         this.eventRepository = eventRepository;
@@ -42,6 +88,10 @@ class EventService implements IEventService {
     private isValidDate(value: unknown): value is Date {
         return value instanceof Date && !Number.isNaN(value.getTime());
     }
+
+    private withDerivedStatus(event: IEvent, now: Date = new Date()): IEvent {
+        return deriveEventStatus(event, now);
+    }
     async createEvent(input: CreateEventInput, actingUser: IActingUser): Promise<Result<IEvent, CreateEventError>> {
         if (!this.isValidCapacity(input.capacity)) {
             return Err(InvalidInputError("capacity must be a positive integer or null."));
@@ -52,7 +102,7 @@ class EventService implements IEventService {
         }
 
         const event: IEvent = {
-            id: (this.curr_ID++).toString(),
+            id: randomUUID(),
             title: input.title,
             description: input.description,
             location: input.location,
@@ -76,10 +126,10 @@ class EventService implements IEventService {
         const event = await this.eventRepository.findById(eventId);
         if (!event) {
             return Err(EventNotFoundError(`Event with id ${eventId} not found.`));
-        } else if (event.status == "draft" && event.organizerId !== actingUser.userId && actingUser.role !== "admin") {
+        } else if (event.status === "draft" && event.organizerId !== actingUser.userId && actingUser.role !== "admin") {
             return Err(UnauthorizedError(`You do not have permission to view this event.`));
         }
-        return Ok(event);
+        return Ok(this.withDerivedStatus(event));
     }
 
     async updateEvent(eventId: string, input: UpdateEventInput, actingUser: IActingUser): Promise<Result<IEvent, UpdateEventError>> {
@@ -144,6 +194,9 @@ class EventService implements IEventService {
         if (event.status !== "draft") {
             return Err(InvalidStateError("Only draft events can be published."));
         }
+        if (event.endAt < new Date()) {
+            return Err(InvalidStateError("Cannot publish an event whose end time has already passed."));
+        }
 
         const updatedEvent = await this.eventRepository.update(eventId, {
             status: "published",
@@ -169,6 +222,9 @@ class EventService implements IEventService {
         //published events can be cancelled.
         if (event.status !== "published") {
             return Err(InvalidStateError("Only published events can be cancelled."));
+        }
+        if (event.endAt < new Date()) {
+            return Err(InvalidStateError("This event has already ended."));
         }
 
         const updatedEvent = await this.eventRepository.update(eventId, {
@@ -207,59 +263,34 @@ class EventService implements IEventService {
         }
 
         const now = new Date();
-        let events = await this.eventRepository.list();
-        //Start with only published events that have not started yet
-        events = events.filter((event) => {
-            return event.status === "published" && event.startAt > now;
+        const range = computeTimeframeRange(filter.timeframe, now);
+
+        let events = await this.eventRepository.findMany({
+            status: "published",
+            startAfter: now,
+            startBefore: range?.endBefore,
+            category: filter.category,
         });
 
-        if (filter.category !== undefined) {
-            events = events.filter((event) => event.category === filter.category);
+        // "this-weekend" needs a lower bound (Saturday) too — push that filter
+        // here rather than in the repo to keep the contract narrow.
+        if (range?.startAfter && range.startAfter > now) {
+            events = events.filter((event) => event.startAt >= range.startAfter!);
         }
 
-        //This week meaning from now through the end of the current week
-        if (filter.timeframe === "this-week") {
-            const endOfWeek = new Date(now);
-            const currentDay = now.getDay();
-            let daysUntilSunday = 0;
-            if (currentDay !== 0) {
-                daysUntilSunday = 7 - currentDay;
-            }
-
-            endOfWeek.setDate(now.getDate() + daysUntilSunday);
-            endOfWeek.setHours(23, 59, 59, 999);
-            events = events.filter((event) => event.startAt <= endOfWeek);
-        }
-
-        //This weekend meaning Saturday through Sunday
-        if (filter.timeframe === "this-weekend") {
-            const currentDay = now.getDay();
-            const weekendStart = new Date(now);
-            const weekendEnd = new Date(now);
-            let daysUntilSaturday = 0;
-            let daysUntilSunday = 0;
-            if (currentDay === 0) {
-                daysUntilSaturday = -1;
-                daysUntilSunday = 0;
-            } else {
-                daysUntilSaturday = 6 - currentDay;
-                daysUntilSunday = 7 - currentDay;
-            }
-
-            weekendStart.setDate(now.getDate() + daysUntilSaturday);
-            weekendStart.setHours(0, 0, 0, 0);
-            weekendEnd.setDate(now.getDate() + daysUntilSunday);
-            weekendEnd.setHours(23, 59, 59, 999);
-            events = events.filter((event) => {
-                return event.startAt >= weekendStart && event.startAt <= weekendEnd;
-            });
-        }
-
-        //Show the earlier events first
         events.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
         return Ok(events);
     }
 
+
+    async listDrafts(actingUser: IActingUser): Promise<Result<IEvent[], ListDraftsError>> {
+        const drafts = await this.eventRepository.findMany({
+            status: "draft",
+            organizerId: actingUser.role === "admin" ? undefined : actingUser.userId,
+        });
+        drafts.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+        return Ok(drafts);
+    }
 
     // Feature 10 — Event Search (Phan Ha). Delegates to src/events/EventSearchService.ts.
     async searchEvents(input: SearchEventsInput): Promise<Result<IEvent[], SearchEventsError>> {

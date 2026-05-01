@@ -50,24 +50,20 @@ class PrismaRsvpRepository implements IRsvpRepository {
     id: string,
     changes: Partial<IRsvp>,
   ): Promise<IRsvp | null> {
-    // Match the in-memory contract: return null instead of throwing when the
-    // row doesn't exist. We pre-check rather than catching Prisma's P2025.
-    const existing = await this.prisma.rsvp.findUnique({ where: { id } });
-    if (!existing) return null;
-
     const data: Record<string, unknown> = {};
     if (changes.status !== undefined) data.status = changes.status;
     if (changes.eventId !== undefined) data.eventId = changes.eventId;
     if (changes.userId !== undefined) data.userId = changes.userId;
     if (changes.createdAt !== undefined) data.createdAt = changes.createdAt;
-    // Always bump updatedAt to match the in-memory implementation.
     data.updatedAt = changes.updatedAt ?? new Date();
 
-    const row = await this.prisma.rsvp.update({
-      where: { id },
-      data,
-    });
-    return toDomain(row);
+    try {
+      const row = await this.prisma.rsvp.update({ where: { id }, data });
+      return toDomain(row);
+    } catch (error) {
+      if (isRecordNotFound(error)) return null;
+      throw error;
+    }
   }
 
   async countGoingByEvent(eventId: string): Promise<number> {
@@ -103,4 +99,13 @@ export function CreatePrismaRsvpRepository(
   prisma: PrismaClient,
 ): IRsvpRepository {
   return new PrismaRsvpRepository(prisma);
+}
+
+function isRecordNotFound(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: unknown }).code === "P2025"
+  );
 }

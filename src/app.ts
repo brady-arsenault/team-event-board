@@ -302,7 +302,29 @@ class ExpressApp implements IApp {
           endAt: req.body.endAt ? new Date(req.body.endAt) : new Date(NaN),
         };
 
-        await this.eventController.createEventFromForm(res, input, sessionStore(req));
+        const publishNow = req.body.action === "publish";
+
+        await this.eventController.createEventFromForm(
+          res,
+          input,
+          sessionStore(req),
+          publishNow,
+        );
+      }),
+    );
+
+    this.app.get(
+      "/events/drafts",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        await this.eventController.showDrafts(
+          res,
+          sessionStore(req),
+          this.isHtmxRequest(req),
+        );
       }),
     );
 
