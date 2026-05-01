@@ -101,9 +101,19 @@ export const InvalidInputError = (message: string): InvalidInputError => ({
 
 // ─── Repository Interfaces ───────────────────────────────────────────────────
 
+export interface FindEventsQuery {
+  status?: EventStatus | EventStatus[];
+  organizerId?: string;
+  category?: EventCategory;
+  startAfter?: Date;
+  startBefore?: Date;
+  search?: string;
+}
+
 export interface IEventRepository {
   findById(id: string): Promise<IEvent | null>;
   list(): Promise<IEvent[]>;
+  findMany(query: FindEventsQuery): Promise<IEvent[]>;
   create(event: IEvent): Promise<IEvent>;
   update(id: string, changes: Partial<IEvent>): Promise<IEvent | null>;
 }
@@ -179,6 +189,8 @@ export interface ListEventsFilter {
 
 export type ListEventsError = InvalidInputError;
 
+export type ListDraftsError = UnauthorizedError;
+
 // Feature 7 — My RSVPs Dashboard (Phan Ha)
 export interface IRsvpWithEvent {
   rsvp: IRsvp;
@@ -231,6 +243,9 @@ export interface IEventService {
   listEvents(
     filter: ListEventsFilter,
   ): Promise<Result<IEvent[], ListEventsError>>;
+  listDrafts(
+    actingUser: IActingUser,
+  ): Promise<Result<IEvent[], ListDraftsError>>;
   // Feature 10
   searchEvents(
     input: SearchEventsInput,

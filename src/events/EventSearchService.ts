@@ -31,21 +31,11 @@ class EventSearchService implements IEventSearchService {
     }
 
     const now = new Date();
-    const all = await this.eventRepository.list();
-    const published = all.filter(
-      (event) => event.status === "published" && event.startAt > now,
-    );
-
-    const normalized = query.trim().toLowerCase();
-    const matched =
-      normalized === ""
-        ? published
-        : published.filter(
-            (event) =>
-              event.title.toLowerCase().includes(normalized) ||
-              event.description.toLowerCase().includes(normalized) ||
-              event.location.toLowerCase().includes(normalized),
-          );
+    const matched = await this.eventRepository.findMany({
+      status: "published",
+      startAfter: now,
+      search: query.trim() === "" ? undefined : query,
+    });
 
     matched.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
     return Ok(matched);
