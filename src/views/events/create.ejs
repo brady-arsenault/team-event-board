@@ -103,13 +103,29 @@
       </div>
     </div>
 
-    <div class="flex justify-end">
-      <button
-        type="submit"
-        class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-      >
-        Create Event
-      </button>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-2">
+      <p class="text-xs text-slate-500">
+        Drafts are private to you until you publish them. You can publish later
+        from <a href="/events/drafts" class="text-blue-700 font-medium hover:underline">My Drafts</a>.
+      </p>
+      <div class="flex gap-3">
+        <button
+          type="submit"
+          name="action"
+          value="draft"
+          class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        >
+          Save as Draft
+        </button>
+        <button
+          type="submit"
+          name="action"
+          value="publish"
+          class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+        >
+          Publish Now
+        </button>
+      </div>
     </div>
   </form>
 </section>

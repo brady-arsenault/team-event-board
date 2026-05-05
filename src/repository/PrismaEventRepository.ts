@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import type {
   EventCategory,
   EventStatus,
+  FindEventsQuery,
   IEvent,
   IEventRepository,
 } from "../contracts";
@@ -24,6 +25,33 @@ class PrismaEventRepository implements IEventRepository {
 
   async list(): Promise<IEvent[]> {
     const rows = await this.prisma.event.findMany();
+    return rows.map(toDomain);
+  }
+
+  async findMany(query: FindEventsQuery): Promise<IEvent[]> {
+    const where: Record<string, unknown> = {};
+
+    if (query.status !== undefined) {
+      where.status = Array.isArray(query.status) ? { in: query.status } : query.status;
+    }
+    if (query.organizerId) where.organizerId = query.organizerId;
+    if (query.category) where.category = query.category;
+    if (query.startAfter || query.startBefore) {
+      const startAt: Record<string, Date> = {};
+      if (query.startAfter) startAt.gt = query.startAfter;
+      if (query.startBefore) startAt.lte = query.startBefore;
+      where.startAt = startAt;
+    }
+    if (query.search && query.search.trim() !== "") {
+      const term = query.search.trim();
+      where.OR = [
+        { title: { contains: term } },
+        { description: { contains: term } },
+        { location: { contains: term } },
+      ];
+    }
+
+    const rows = await this.prisma.event.findMany({ where });
     return rows.map(toDomain);
   }
 
@@ -51,12 +79,6 @@ class PrismaEventRepository implements IEventRepository {
     id: string,
     changes: Partial<IEvent>,
   ): Promise<IEvent | null> {
-    // Match the in-memory contract: return null instead of throwing when the row
-    // doesn't exist. Prisma's `update` throws P2025; we pre-check rather than
-    // catch so the happy path doesn't allocate an Error.
-    const existing = await this.prisma.event.findUnique({ where: { id } });
-    if (!existing) return null;
-
     const data: Record<string, unknown> = {};
     if (changes.title !== undefined) data.title = changes.title;
     if (changes.description !== undefined) data.description = changes.description;
@@ -66,15 +88,25 @@ class PrismaEventRepository implements IEventRepository {
     if (changes.status !== undefined) data.status = changes.status;
     if (changes.startAt !== undefined) data.startAt = changes.startAt;
     if (changes.endAt !== undefined) data.endAt = changes.endAt;
-    // Always bump updatedAt to match the in-memory implementation.
     data.updatedAt = changes.updatedAt ?? new Date();
 
-    const row = await this.prisma.event.update({
-      where: { id },
-      data,
-    });
-    return toDomain(row);
+    try {
+      const row = await this.prisma.event.update({ where: { id }, data });
+      return toDomain(row);
+    } catch (error) {
+      if (isRecordNotFound(error)) return null;
+      throw error;
+    }
   }
+}
+
+function isRecordNotFound(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: unknown }).code === "P2025"
+  );
 }
 
 /**

@@ -250,6 +250,9 @@ describe("RsvpService.toggleRsvp — unit", () => {
         ...existing,
         ...changes,
       }));
+      // Empty waitlist — the promote-on-cancel path is a no-op.
+      rsvpRepo.findByEvent.mockResolvedValue([{ ...existing, status: "cancelled" }]);
+      rsvpRepo.countGoingByEvent.mockResolvedValue(0);
 
       const service = CreateRsvpService(eventRepo, rsvpRepo, silentLogger());
       const result = await service.toggleRsvp(event.id, makeActingUser());
@@ -260,10 +263,112 @@ describe("RsvpService.toggleRsvp — unit", () => {
         existing.id,
         expect.objectContaining({ status: "cancelled" }),
       );
-      // When cancelling, we do not read the going count again — capacity is
-      // irrelevant for a cancel.
-      expect(rsvpRepo.countGoingByEvent).not.toHaveBeenCalled();
       expect(rsvpRepo.create).not.toHaveBeenCalled();
+    });
+
+    it("promotes the oldest waitlisted RSVP when a 'going' RSVP cancels and a spot frees up", async () => {
+      const event = makeEvent({ capacity: 2 });
+      const cancelling = makeRsvp({
+        id: "rsvp-going",
+        eventId: event.id,
+        userId: USER_IDS.reader,
+        status: "going",
+      });
+      const olderWaitlisted = makeRsvp({
+        id: "rsvp-waitlisted-older",
+        eventId: event.id,
+        userId: "user-older",
+        status: "waitlisted",
+        createdAt: new Date("2026-01-01T00:00:00Z"),
+      });
+      const newerWaitlisted = makeRsvp({
+        id: "rsvp-waitlisted-newer",
+        eventId: event.id,
+        userId: "user-newer",
+        status: "waitlisted",
+        createdAt: new Date("2026-02-01T00:00:00Z"),
+      });
+
+      const eventRepo = makeEventRepoMock();
+      const rsvpRepo = makeRsvpRepoMock();
+      eventRepo.findById.mockResolvedValue(event);
+      rsvpRepo.findByEventAndUser.mockResolvedValue(cancelling);
+      rsvpRepo.update.mockImplementation(async (id, changes) => ({
+        ...cancelling,
+        id,
+        ...changes,
+      }));
+      rsvpRepo.findByEvent.mockResolvedValue([
+        { ...cancelling, status: "cancelled" },
+        olderWaitlisted,
+        newerWaitlisted,
+      ]);
+      rsvpRepo.countGoingByEvent.mockResolvedValue(1);
+
+      const service = CreateRsvpService(eventRepo, rsvpRepo, silentLogger());
+      const result = await service.toggleRsvp(event.id, makeActingUser());
+
+      expect(result.ok).toBe(true);
+      expect(rsvpRepo.update).toHaveBeenCalledWith(
+        cancelling.id,
+        expect.objectContaining({ status: "cancelled" }),
+      );
+      expect(rsvpRepo.update).toHaveBeenCalledWith(
+        olderWaitlisted.id,
+        expect.objectContaining({ status: "going" }),
+      );
+      expect(rsvpRepo.update).not.toHaveBeenCalledWith(
+        newerWaitlisted.id,
+        expect.anything(),
+      );
+    });
+
+    it("does not promote when capacity is unlimited", async () => {
+      const event = makeEvent({ capacity: null });
+      const cancelling = makeRsvp({
+        eventId: event.id,
+        userId: USER_IDS.reader,
+        status: "going",
+      });
+      const eventRepo = makeEventRepoMock();
+      const rsvpRepo = makeRsvpRepoMock();
+      eventRepo.findById.mockResolvedValue(event);
+      rsvpRepo.findByEventAndUser.mockResolvedValue(cancelling);
+      rsvpRepo.update.mockImplementation(async (id, changes) => ({
+        ...cancelling,
+        id,
+        ...changes,
+      }));
+
+      const service = CreateRsvpService(eventRepo, rsvpRepo, silentLogger());
+      await service.toggleRsvp(event.id, makeActingUser());
+
+      expect(rsvpRepo.findByEvent).not.toHaveBeenCalled();
+      expect(rsvpRepo.countGoingByEvent).not.toHaveBeenCalled();
+    });
+
+    it("does not promote when cancelling a 'waitlisted' RSVP (no spot freed)", async () => {
+      const event = makeEvent({ capacity: 2 });
+      const cancelling = makeRsvp({
+        eventId: event.id,
+        userId: USER_IDS.reader,
+        status: "waitlisted",
+      });
+      const eventRepo = makeEventRepoMock();
+      const rsvpRepo = makeRsvpRepoMock();
+      eventRepo.findById.mockResolvedValue(event);
+      rsvpRepo.findByEventAndUser.mockResolvedValue(cancelling);
+      rsvpRepo.update.mockImplementation(async (id, changes) => ({
+        ...cancelling,
+        id,
+        ...changes,
+      }));
+
+      const service = CreateRsvpService(eventRepo, rsvpRepo, silentLogger());
+      await service.toggleRsvp(event.id, makeActingUser());
+
+      expect(rsvpRepo.findByEvent).not.toHaveBeenCalled();
+      expect(rsvpRepo.countGoingByEvent).not.toHaveBeenCalled();
     });
 
     it("cancels a 'waitlisted' RSVP when clicked again", async () => {
@@ -346,6 +451,44 @@ describe("RsvpService.toggleRsvp — unit", () => {
 
       expect(result.ok).toBe(true);
       if (result.ok) expect(result.value.status).toBe("waitlisted");
+    });
+  });
+
+  describe("concurrency", () => {
+    it("serializes concurrent toggles on the same event so the last spot is not double-allocated", async () => {
+      const event = makeEvent({ capacity: 1 });
+      const eventRepo = makeEventRepoMock();
+      const rsvpRepo = makeRsvpRepoMock();
+      eventRepo.findById.mockResolvedValue(event);
+      rsvpRepo.findByEventAndUser.mockResolvedValue(null);
+
+      // Track the running "going" count as a true source of state, like a
+      // database would. Each call to countGoingByEvent reflects the number
+      // of "going" RSVPs created so far. If toggleRsvp is properly serialized,
+      // the second caller must observe the first caller's write.
+      const created: Array<{ id: string; status: string }> = [];
+      rsvpRepo.countGoingByEvent.mockImplementation(async () => {
+        return created.filter((r) => r.status === "going").length;
+      });
+      rsvpRepo.create.mockImplementation(async (rsvp) => {
+        created.push({ id: rsvp.id, status: rsvp.status });
+        return rsvp;
+      });
+
+      const service = CreateRsvpService(eventRepo, rsvpRepo, silentLogger());
+
+      const [first, second] = await Promise.all([
+        service.toggleRsvp(event.id, makeActingUser({ userId: "user-a" })),
+        service.toggleRsvp(event.id, makeActingUser({ userId: "user-b" })),
+      ]);
+
+      expect(first.ok).toBe(true);
+      expect(second.ok).toBe(true);
+      const statuses = [first, second]
+        .map((r) => (r.ok ? r.value.status : null))
+        .filter((s): s is string => s !== null)
+        .sort();
+      expect(statuses).toEqual(["going", "waitlisted"]);
     });
   });
 
