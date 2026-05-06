@@ -47,6 +47,10 @@
     hx-target="#event-list"
     hx-push-url="true"
     hx-trigger="change from:select, submit"
+    x-data="{
+      selectedCategory: '<%= typeof filters !== "undefined" ? filters.category : "" %>',
+      selectedTimeframe: '<%= typeof filters !== "undefined" ? filters.timeframe : "" %>'
+    }"
   >
     <div class="flex flex-col gap-4 lg:flex-row lg:items-end">
       <div class="flex-1 min-w-0">
@@ -56,6 +60,8 @@
         <select
           id="category"
           name="category"
+          x-model="selectedCategory"
+          x-bind:class="selectedCategory ? 'border-blue-500 ring-2 ring-blue-100 bg-white' : ''"
           class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none"
         >
           <option value="">All categories</option>
@@ -75,6 +81,8 @@
         <select
           id="timeframe"
           name="timeframe"
+          x-model="selectedTimeframe"
+          x-bind:class="selectedTimeframe ? 'border-blue-500 ring-2 ring-blue-100 bg-white' : ''"
           class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none"
         >
           <option value="">All upcoming</option>
@@ -94,6 +102,8 @@
 
         <a
           href="/home"
+          x-show="selectedCategory || selectedTimeframe"
+          x-transition.opacity.duration.150ms
           class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-100"
         >
           Clear
@@ -115,3 +125,4 @@
     <%- include("events/partials/event-list", { events: events }) %>
   </div>
 </section>
+
