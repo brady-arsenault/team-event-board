@@ -3,44 +3,105 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Project Starter</title>
+    <title>Campus Events</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   </head>
-  <body class="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900 p-6">
+  <body class="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900 px-4 py-6 sm:px-6">
     <div class="max-w-5xl mx-auto">
-      <nav class="flex items-center justify-between gap-3 mb-6 flex-wrap">
-        <a
-          href="<%= session?.authenticatedUser ? '/home' : '/login' %>"
-          class="inline-flex items-center gap-2.5 px-4 py-3 rounded-xl bg-white border border-slate-200 shadow-lg font-bold text-slate-900 no-underline"
-        >
-          <span class="w-2.5 h-2.5 rounded-full bg-gradient-to-b from-blue-400 to-blue-600"></span>
-          Project Starter
-        </a>
-        <div class="flex items-center gap-3 flex-wrap">
+      <nav x-data="{ open: false }" class="mb-6 rounded-2xl bg-white border border-slate-200 shadow-lg">
+        <div class="flex items-center justify-between px-4 py-3 sm:px-5">
+          <a
+            href="<%= session?.authenticatedUser ? '/home' : '/login' %>"
+            class="inline-flex items-center gap-2.5 font-bold text-slate-900 no-underline"
+          >
+            <span class="w-2.5 h-2.5 rounded-full bg-gradient-to-b from-blue-400 to-blue-600"></span>
+            Campus Events
+          </a>
+
           <% if (session?.authenticatedUser) { %>
-            <a href="/home" class="text-blue-700 font-semibold no-underline hover:underline">Events</a>
-            <a href="/events/drafts" class="text-blue-700 font-semibold no-underline hover:underline">My Drafts</a>
-            <% if (session.authenticatedUser.role === "admin") { %>
-              <a href="/admin/users" class="text-blue-700 font-semibold no-underline hover:underline">Manage Users</a>
-            <% } %>
-            <span class="text-slate-500">
-              Signed in as <strong class="text-slate-700"><%= session.authenticatedUser.displayName %></strong>
-              (<%= session.authenticatedUser.role %>)
-            </span>
-            <form method="post" action="/logout" class="m-0">
-              <button
-                type="submit"
-                class="px-3.5 py-2 rounded-lg bg-white text-blue-700 border border-slate-200 cursor-pointer hover:bg-blue-50 text-sm font-medium"
-              >
-                Log out
-              </button>
-            </form>
+            <button
+              type="button"
+              x-on:click="open = !open"
+              class="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :aria-expanded="open"
+              aria-label="Toggle navigation"
+            >
+              <svg x-show="!open" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+              <svg x-show="open" x-cloak class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div class="hidden md:flex items-center gap-4">
+              <a href="/home" class="text-sm font-medium text-slate-600 no-underline hover:text-blue-700 transition-colors">Events</a>
+              <a href="/events/search" class="text-sm font-medium text-slate-600 no-underline hover:text-blue-700 transition-colors">Search</a>
+              <a href="/events/drafts" class="text-sm font-medium text-slate-600 no-underline hover:text-blue-700 transition-colors">My Drafts</a>
+              <% if (session.authenticatedUser.role === "user") { %>
+                <a href="/my-rsvps" class="text-sm font-medium text-slate-600 no-underline hover:text-blue-700 transition-colors">My RSVPs</a>
+              <% } %>
+              <% if (session.authenticatedUser.role === "admin") { %>
+                <a href="/admin/users" class="text-sm font-medium text-slate-600 no-underline hover:text-blue-700 transition-colors">Manage Users</a>
+              <% } %>
+              <div class="h-5 w-px bg-slate-200"></div>
+              <span class="text-xs text-slate-500">
+                <strong class="text-slate-700"><%= session.authenticatedUser.displayName %></strong>
+                <span class="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-md bg-slate-100 text-[10px] font-medium text-slate-600 uppercase tracking-wide"><%= session.authenticatedUser.role %></span>
+              </span>
+              <form method="post" action="/logout" class="m-0">
+                <button
+                  type="submit"
+                  class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                >
+                  Log out
+                </button>
+              </form>
+            </div>
           <% } else { %>
-            <a href="/login" class="text-blue-700 font-semibold no-underline hover:underline">Log in</a>
+            <a href="/login" class="text-sm font-medium text-blue-700 no-underline hover:text-blue-900 transition-colors">Log in</a>
           <% } %>
         </div>
+
+        <% if (session?.authenticatedUser) { %>
+          <div
+            x-show="open"
+            x-transition:enter="transition ease-out duration-150"
+            x-transition:enter-start="opacity-0 -translate-y-1"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-100"
+            x-transition:leave-start="opacity-100 translate-y-0"
+            x-transition:leave-end="opacity-0 -translate-y-1"
+            x-cloak
+            class="md:hidden border-t border-slate-200 px-4 pb-4 pt-3 space-y-2"
+          >
+            <a href="/home" class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 no-underline hover:bg-slate-50">Events</a>
+            <a href="/events/search" class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 no-underline hover:bg-slate-50">Search</a>
+            <a href="/events/drafts" class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 no-underline hover:bg-slate-50">My Drafts</a>
+            <% if (session.authenticatedUser.role === "user") { %>
+              <a href="/my-rsvps" class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 no-underline hover:bg-slate-50">My RSVPs</a>
+            <% } %>
+            <% if (session.authenticatedUser.role === "admin") { %>
+              <a href="/admin/users" class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 no-underline hover:bg-slate-50">Manage Users</a>
+            <% } %>
+            <div class="border-t border-slate-200 pt-3 mt-2 flex items-center justify-between">
+              <span class="text-xs text-slate-500">
+                <strong class="text-slate-700"><%= session.authenticatedUser.displayName %></strong>
+                <span class="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-md bg-slate-100 text-[10px] font-medium text-slate-600 uppercase tracking-wide"><%= session.authenticatedUser.role %></span>
+              </span>
+              <form method="post" action="/logout" class="m-0">
+                <button
+                  type="submit"
+                  class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                >
+                  Log out
+                </button>
+              </form>
+            </div>
+          </div>
+        <% } %>
       </nav>
       <main class="max-w-5xl mx-auto"><%- body %></main>
     </div>
