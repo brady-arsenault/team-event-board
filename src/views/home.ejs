@@ -110,6 +110,45 @@
         </a>
       </div>
     </div>
+
+    <div
+      x-show="selectedCategory || selectedTimeframe"
+      x-transition.opacity.duration.150ms
+      class="mt-4 pt-4 border-t border-slate-200"
+    >
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+        Active Filters
+      </p>
+
+      <div class="flex flex-wrap gap-2">
+        <span
+          x-show="selectedCategory"
+          class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 border border-blue-200"
+        >
+          Category:
+          <span
+            class="ml-1"
+            x-text="selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)"
+          ></span>
+        </span>
+
+        <span
+          x-show="selectedTimeframe"
+          class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 border border-blue-200"
+        >
+          Timeframe:
+          <span
+            class="ml-1"
+            x-text="
+              selectedTimeframe === 'this-week' ? 'This week' :
+              selectedTimeframe === 'this-weekend' ? 'This weekend' :
+              selectedTimeframe === 'upcoming' ? 'Upcoming' :
+              selectedTimeframe
+            "
+          ></span>
+        </span>
+      </div>
+    </div>
   </form>
 </section>
 
@@ -125,4 +164,3 @@
     <%- include("events/partials/event-list", { events: events }) %>
   </div>
 </section>
-
