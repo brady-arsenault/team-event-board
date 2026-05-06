@@ -16,7 +16,7 @@
   <% } else { %>
     <div class="flex items-center justify-between mb-4">
       <p class="text-sm text-slate-500 m-0">
-        <strong class="text-slate-700"><%= events.length %></strong> <%= events.length === 1 ? "event" : "events" %> found
+        <span class="font-semibold text-slate-700"><%= events.length %> <%= events.length === 1 ? "event" : "events" %> found</span>
         <% if (query && query.trim() !== "") { %>
           for &ldquo;<strong class="text-slate-700"><%= query %></strong>&rdquo;
         <% } %>
