@@ -1,2 +1,33 @@
-<%- include("dashboard-upcoming", { upcoming: upcoming }) %>
-<%- include("dashboard-past", { past: past }) %>
+<div class="flex gap-1 mb-5 p-1 rounded-xl bg-slate-100 border border-slate-200">
+  <button
+    type="button"
+    x-on:click="tab = 'upcoming'"
+    :class="tab === 'upcoming' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+    class="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
+  >
+    Upcoming
+    <span
+      :class="tab === 'upcoming' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'"
+      class="ml-1.5 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold transition-colors"
+    ><%= upcoming.length %></span>
+  </button>
+  <button
+    type="button"
+    x-on:click="tab = 'past'"
+    :class="tab === 'past' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+    class="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
+  >
+    Past &amp; Cancelled
+    <span
+      :class="tab === 'past' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'"
+      class="ml-1.5 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold transition-colors"
+    ><%= past.length %></span>
+  </button>
+</div>
+
+<div x-show="tab === 'upcoming'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+  <%- include("dashboard-upcoming", { upcoming: upcoming }) %>
+</div>
+<div x-show="tab === 'past'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+  <%- include("dashboard-past", { past: past }) %>
+</div>
