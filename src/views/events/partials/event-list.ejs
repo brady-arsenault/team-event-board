@@ -45,6 +45,15 @@
             </p>
           <% } %>
         </div>
+
+        <div class="mt-4 flex justify-end">
+          <a
+            href="/events/<%= event.id %>/detail"
+            class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+          >
+            View &amp; RSVP &rarr;
+          </a>
+        </div>
       </article>
     <% }) %>
   </div>
