@@ -38,11 +38,11 @@
             </div>
             <% const badgeStatus = item.rsvp.status === "cancelled" ? "cancelled" : item.event.status; %>
             <% if (badgeStatus === "cancelled") { %>
-              <span class="shrink-0 inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 border border-red-200">
-                Cancelled
+              <span class="shrink-0 inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 border border-red-200 capitalize">
+                <%= badgeStatus %>
               </span>
             <% } else { %>
-              <span class="shrink-0 inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 border border-slate-200">
+              <span class="shrink-0 inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 border border-slate-200 capitalize">
                 <%= badgeStatus %>
               </span>
             <% } %>
