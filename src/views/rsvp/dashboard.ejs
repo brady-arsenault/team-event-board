@@ -19,6 +19,6 @@
   <%- include("../partials/error", { message: pageError }) %>
 <% } %>
 
-<div id="my-rsvps-content">
+<div id="my-rsvps-content" x-data="{ tab: 'upcoming' }">
   <%- include("partials/dashboard-content", { upcoming: upcoming, past: past }) %>
 </div>
