@@ -1,6 +1,6 @@
-<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
-  <h1 class="text-3xl font-bold text-slate-900 mb-2">Search Events</h1>
-  <p class="text-slate-500 m-0">
+<section class="mb-6 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 shadow-lg">
+  <h1 class="text-2xl sm:text-3xl font-bold text-white mb-1">Search Events</h1>
+  <p class="text-blue-200 text-sm sm:text-base m-0">
     Find published upcoming events by title, description, or location.
   </p>
 </section>
@@ -9,7 +9,7 @@
   <%- include("../partials/error", { message: pageError }) %>
 <% } %>
 
-<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
+<section class="mb-6 p-5 sm:p-6 border border-slate-200 rounded-2xl bg-white shadow-lg">
   <form
     action="/events/search"
     method="get"
@@ -17,31 +17,39 @@
     hx-target="#search-results"
     hx-swap="innerHTML"
     hx-trigger="submit, keyup changed delay:300ms from:input[name='q']"
-    class="flex gap-3 flex-wrap items-end"
+    class="flex gap-3 flex-col sm:flex-row sm:items-end"
   >
-    <div class="flex-1 min-w-60">
+    <div class="flex-1">
       <label for="q" class="block text-sm font-medium text-slate-700 mb-2">
         Keyword
       </label>
-      <input
-        id="q"
-        name="q"
-        type="search"
-        value="<%= query %>"
-        maxlength="500"
-        placeholder="e.g. hackathon, library, volunteer"
-        class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
-      />
+      <div class="relative">
+        <svg class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
+        <input
+          id="q"
+          name="q"
+          type="search"
+          value="<%= query %>"
+          maxlength="500"
+          placeholder="e.g. hackathon, library, volunteer"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-shadow"
+        />
+      </div>
     </div>
     <button
       type="submit"
-      class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+      class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-colors cursor-pointer"
     >
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+      </svg>
       Search
     </button>
   </form>
 </section>
 
-<section id="search-results" class="mb-5">
+<section id="search-results" class="mb-6">
   <%- include("partials/search-results", { events: events, query: query }) %>
 </section>
