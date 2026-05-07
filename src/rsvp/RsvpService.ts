@@ -149,12 +149,6 @@ class RsvpService implements IRsvpService {
   async getUserRsvps(
     actingUser: IActingUser,
   ): Promise<Result<IUserRsvpDashboard, GetUserRsvpsError>> {
-    if (actingUser.role !== "user") {
-      return Err(
-        UnauthorizedError("Only members may view the RSVP dashboard."),
-      );
-    }
-
     const rsvps = await this.rsvpRepository.findByUser(actingUser.userId);
     const now = new Date();
     const upcoming: IRsvpWithEvent[] = [];
