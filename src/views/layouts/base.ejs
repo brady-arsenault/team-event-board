@@ -9,9 +9,10 @@
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <style>
       .parkour-active nav,
-      .parkour-active main section,
-      .parkour-active main article,
-      .parkour-active main form {
+      .parkour-active main > section,
+      .parkour-active main > div,
+      .parkour-active main > article,
+      .parkour-active main > form {
         background-color: rgba(255, 255, 255, 0.7) !important;
         backdrop-filter: blur(2px);
         transition: background-color 0.3s ease;
@@ -32,8 +33,8 @@
         window.onYouTubeIframeAPIReady = function () {
           var saved = parseFloat(sessionStorage.getItem('parkourTime')) || 0;
           player = new YT.Player('parkour-player', {
-            videoId: 'n_Dv4JMiwK8',
-            playerVars: { autoplay: 1, mute: 1, loop: 1, playlist: 'n_Dv4JMiwK8', controls: 0, showinfo: 0, start: Math.floor(saved) },
+            videoId: 'isJ8N5cYk18',
+            playerVars: { autoplay: 1, mute: 1, loop: 1, playlist: 'isJ8N5cYk18', controls: 0, showinfo: 0, start: Math.floor(saved) },
             events: {
               onReady: function (e) {
                 if (saved > 0) e.target.seekTo(saved, true);
