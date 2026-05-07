@@ -260,11 +260,11 @@ class ExpressApp implements IApp {
           res,
           {
             category:
-              typeof req.query.category === "string"
+              typeof req.query.category === "string" && req.query.category !== ""
                 ? (req.query.category as ListEventsFilter["category"])
                 : undefined,
             timeframe:
-              typeof req.query.timeframe === "string"
+              typeof req.query.timeframe === "string" && req.query.timeframe !== ""
                 ? (req.query.timeframe as ListEventsFilter["timeframe"])
                 : undefined,
           },
@@ -302,7 +302,29 @@ class ExpressApp implements IApp {
           endAt: req.body.endAt ? new Date(req.body.endAt) : new Date(NaN),
         };
 
-        await this.eventController.createEventFromForm(res, input, sessionStore(req));
+        const publishNow = req.body.action === "publish";
+
+        await this.eventController.createEventFromForm(
+          res,
+          input,
+          sessionStore(req),
+          publishNow,
+        );
+      }),
+    );
+
+    this.app.get(
+      "/events/drafts",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        await this.eventController.showDrafts(
+          res,
+          sessionStore(req),
+          this.isHtmxRequest(req),
+        );
       }),
     );
 

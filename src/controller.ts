@@ -2,6 +2,7 @@ import type { Response } from "express";
 import type { ILoggingService } from "./service/LoggingService";
 import type {
   IEventService,
+  IRsvpRepository,
   CreateEventInput,
   UpdateEventInput,
   ListEventsFilter,
@@ -23,6 +24,7 @@ export interface IEventController {
     res: Response,
     input: CreateEventInput,
     store: AppSessionStore,
+    publishNow?: boolean,
   ): Promise<void>;
   updateEventFromForm(
     res: Response,
@@ -48,6 +50,11 @@ export interface IEventController {
     store: AppSessionStore,
     isHtmx: boolean,
   ): Promise<void>;
+  showDrafts(
+    res: Response,
+    store: AppSessionStore,
+    isHtmx: boolean,
+  ): Promise<void>;
   eventDetailFromForm(
     res: Response,
     eventId: string,
@@ -59,6 +66,7 @@ export interface IEventController {
 class EventController implements IEventController {
   constructor(
     private readonly service: IEventService,
+    private readonly rsvpRepository: IRsvpRepository,
     private readonly logger: ILoggingService,
   ) {}
 
@@ -137,6 +145,7 @@ class EventController implements IEventController {
     res: Response,
     input: CreateEventInput,
     store: AppSessionStore,
+    publishNow: boolean = false,
   ): Promise<void> {
     const session = touchAppSession(store);
     const currentUser = getAuthenticatedUser(store);
@@ -149,11 +158,13 @@ class EventController implements IEventController {
       return;
     }
 
-    const result = await this.service.createEvent(input, {
+    const acting = {
       userId: currentUser.userId,
       role: currentUser.role,
       displayName: currentUser.displayName,
-    });
+    };
+
+    const result = await this.service.createEvent(input, acting);
 
     if (result.ok === false) {
       const status = result.value.name === "InvalidInputError" ? 400 : 403;
@@ -167,7 +178,26 @@ class EventController implements IEventController {
     }
 
     this.logger.info(`Created event ${result.value.id}`);
-    res.setHeader('HX-Redirect', '/home');
+
+    if (publishNow) {
+      const publishResult = await this.service.publishEvent(result.value.id, acting);
+      if (publishResult.ok === false) {
+        this.logger.warn(
+          `Auto-publish on create failed for ${result.value.id}: ${publishResult.value.message}`,
+        );
+        res.status(400).render("partials/error", {
+          message: publishResult.value.message,
+          layout: false,
+        });
+        return;
+      }
+      this.logger.info(`Published event ${publishResult.value.id} on create`);
+      res.setHeader("HX-Redirect", "/home");
+      res.status(302).send();
+      return;
+    }
+
+    res.setHeader("HX-Redirect", "/events/drafts");
     res.status(302).send();
   }
 
@@ -444,14 +474,26 @@ class EventController implements IEventController {
           category: filter.category ?? "",
           timeframe: filter.timeframe ?? "",
         },
+        userRsvpMap: {},
         layout: isHtmx ? false : undefined,
       });
       return;
     }
 
+    const events = result.value;
+
+    const userRsvpMap: Record<string, string> = {};
+    const rsvps = await this.rsvpRepository.findByUser(currentUser.userId);
+    for (const rsvp of rsvps) {
+      if (rsvp.status !== "cancelled") {
+        userRsvpMap[rsvp.eventId] = rsvp.status;
+      }
+    }
+
     if (isHtmx) {
       res.render("events/partials/event-list", {
-        events: result.value,
+        events,
+        userRsvpMap,
         layout: false,
       });
       return;
@@ -460,11 +502,51 @@ class EventController implements IEventController {
     res.render("home", {
       session,
       pageError: null,
-      events: result.value,
+      events,
       filters: {
         category: filter.category ?? "",
         timeframe: filter.timeframe ?? "",
       },
+      userRsvpMap,
+      layout: isHtmx ? false : undefined,
+    });
+  }
+
+  async showDrafts(
+    res: Response,
+    store: AppSessionStore,
+    isHtmx: boolean,
+  ): Promise<void> {
+    const session = touchAppSession(store);
+    const currentUser = getAuthenticatedUser(store);
+
+    if (!currentUser) {
+      res.status(401).render("partials/error", {
+        message: "Please log in to continue.",
+        layout: false,
+      });
+      return;
+    }
+
+    const result = await this.service.listDrafts({
+      userId: currentUser.userId,
+      role: currentUser.role,
+      displayName: currentUser.displayName,
+    });
+
+    if (result.ok === false) {
+      this.logger.warn(`List drafts failed: ${result.value.message}`);
+      res.status(403).render("partials/error", {
+        message: result.value.message,
+        layout: false,
+      });
+      return;
+    }
+
+    res.render("events/drafts", {
+      session,
+      pageError: null,
+      drafts: result.value,
       layout: isHtmx ? false : undefined,
     });
   }
@@ -516,8 +598,9 @@ class EventController implements IEventController {
 
 export function CreateEventController(
   service: IEventService,
+  rsvpRepository: IRsvpRepository,
   logger: ILoggingService,
 ): IEventController {
-  return new EventController(service, logger);
+  return new EventController(service, rsvpRepository, logger);
 }
 

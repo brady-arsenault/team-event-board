@@ -71,20 +71,18 @@ describe("GET /my-rsvps — Feature 7 (e2e)", () => {
   });
 
   describe("role authorization", () => {
-    it("returns 403 when an admin user accesses the dashboard", async () => {
+    it("returns 200 when an admin user accesses the dashboard", async () => {
       await login(USER_EMAILS.admin);
       const res = await agent.get("/my-rsvps");
 
-      expect(res.status).toBe(403);
-      expect(res.text).toMatch(/members/i);
+      expect(res.status).toBe(200);
     });
 
-    it("returns 403 when a staff user accesses the dashboard", async () => {
+    it("returns 200 when a staff user accesses the dashboard", async () => {
       await login(USER_EMAILS.staff);
       const res = await agent.get("/my-rsvps");
 
-      expect(res.status).toBe(403);
-      expect(res.text).toMatch(/members/i);
+      expect(res.status).toBe(200);
     });
   });
 

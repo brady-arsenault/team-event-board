@@ -11,22 +11,29 @@ async function loginAsAdmin(app: ReturnType<typeof makeApp>) {
   return agent;
 }
 
+function futureDateTimeLocal(offsetMs: number): string {
+  const d = new Date(Date.now() + offsetMs);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 async function createDraftEvent(agent: ReturnType<typeof request.agent>) {
   const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
   const title = "Feature 5 Publish Test Event";
+  const oneDay = 24 * 60 * 60 * 1000;
   const response = await agent.post("/events/create").type("form").send({
     title,
     description: "Test description",
     location: "Campus Center",
     category: "social",
     capacity: "25",
-    startAt: "2026-05-01T18:00",
-    endAt: "2026-05-01T20:00",
+    startAt: futureDateTimeLocal(7 * oneDay),
+    endAt: futureDateTimeLocal(7 * oneDay + 2 * 60 * 60 * 1000),
   });
 
   expect([200, 302]).toContain(response.status);
   const redirectTarget = response.headers["hx-redirect"] ?? response.headers.location;
-  expect(redirectTarget).toBe("/home");
+  expect(redirectTarget).toBe("/events/drafts");
 
   const createdCall = logSpy.mock.calls.find((call) => {
     return typeof call[0] === "string" && call[0].includes("Created event ");
