@@ -102,6 +102,7 @@
 
         <a
           href="/home"
+          x-cloak
           x-show="selectedCategory || selectedTimeframe"
           x-transition.opacity.duration.150ms
           class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-100"
@@ -112,6 +113,7 @@
     </div>
 
     <div
+      x-cloak
       x-show="selectedCategory || selectedTimeframe"
       x-transition.opacity.duration.150ms
       class="mt-4 pt-4 border-t border-slate-200"
@@ -164,3 +166,4 @@
     <%- include("events/partials/event-list", { events: events }) %>
   </div>
 </section>
+
