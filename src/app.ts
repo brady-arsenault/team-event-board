@@ -260,11 +260,11 @@ class ExpressApp implements IApp {
           res,
           {
             category:
-              typeof req.query.category === "string"
+              typeof req.query.category === "string" && req.query.category !== ""
                 ? (req.query.category as ListEventsFilter["category"])
                 : undefined,
             timeframe:
-              typeof req.query.timeframe === "string"
+              typeof req.query.timeframe === "string" && req.query.timeframe !== ""
                 ? (req.query.timeframe as ListEventsFilter["timeframe"])
                 : undefined,
           },
@@ -504,4 +504,3 @@ export function CreateApp(
     eventSearchController,
   );
 }
-
