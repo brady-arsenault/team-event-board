@@ -68,7 +68,7 @@ export function createComposedApp(config: ComposedAppConfig = {}): IApp {
   const authController = CreateAuthController(authService, adminUserService, resolvedLogger);
 
   const eventService = CreateEventService(eventRepository, resolvedLogger);
-  const eventController = CreateEventController(eventService, resolvedLogger);
+  const eventController = CreateEventController(eventService, rsvpRepository, resolvedLogger);
 
   // Feature 7 — My RSVPs Dashboard
   const rsvpService = CreateRsvpService(eventRepository, rsvpRepository, resolvedLogger);

@@ -2,6 +2,7 @@ import type { Response } from "express";
 import type { ILoggingService } from "./service/LoggingService";
 import type {
   IEventService,
+  IRsvpRepository,
   CreateEventInput,
   UpdateEventInput,
   ListEventsFilter,
@@ -65,6 +66,7 @@ export interface IEventController {
 class EventController implements IEventController {
   constructor(
     private readonly service: IEventService,
+    private readonly rsvpRepository: IRsvpRepository,
     private readonly logger: ILoggingService,
   ) {}
 
@@ -472,14 +474,26 @@ class EventController implements IEventController {
           category: filter.category ?? "",
           timeframe: filter.timeframe ?? "",
         },
+        userRsvpMap: {},
         layout: isHtmx ? false : undefined,
       });
       return;
     }
 
+    const events = result.value;
+
+    const userRsvpMap: Record<string, string> = {};
+    const rsvps = await this.rsvpRepository.findByUser(currentUser.userId);
+    for (const rsvp of rsvps) {
+      if (rsvp.status !== "cancelled") {
+        userRsvpMap[rsvp.eventId] = rsvp.status;
+      }
+    }
+
     if (isHtmx) {
       res.render("events/partials/event-list", {
-        events: result.value,
+        events,
+        userRsvpMap,
         layout: false,
       });
       return;
@@ -488,11 +502,12 @@ class EventController implements IEventController {
     res.render("home", {
       session,
       pageError: null,
-      events: result.value,
+      events,
       filters: {
         category: filter.category ?? "",
         timeframe: filter.timeframe ?? "",
       },
+      userRsvpMap,
       layout: isHtmx ? false : undefined,
     });
   }
@@ -583,8 +598,9 @@ class EventController implements IEventController {
 
 export function CreateEventController(
   service: IEventService,
+  rsvpRepository: IRsvpRepository,
   logger: ILoggingService,
 ): IEventController {
-  return new EventController(service, logger);
+  return new EventController(service, rsvpRepository, logger);
 }
 
