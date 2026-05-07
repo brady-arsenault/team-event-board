@@ -46,7 +46,7 @@
     hx-get="/home"
     hx-target="#event-list"
     hx-push-url="true"
-    hx-trigger="change from:select, submit"
+    hx-trigger="submit"
     x-data="{
       selectedCategory: '<%= typeof filters !== "undefined" ? filters.category : "" %>',
       selectedTimeframe: '<%= typeof filters !== "undefined" ? filters.timeframe : "" %>'
